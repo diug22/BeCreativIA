@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concept Graph</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        /* Main Header */
+        .main-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: linear-gradient(180deg, rgba(15,15,15,0.9) 0%, rgba(15,15,15,0.7) 70%, transparent 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            max-width: 1200px;
+            width: 100%;
+            justify-content: space-between;
+        }
+        
+        /* Branding */
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+        }
+        
+        .brand-logo {
+            font-size: 24px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .brand-subtitle {
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+        
+        .main-content {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex: 1;
+            justify-content: center;
+        }
+        
+        /* Concept Input/Title */
+        .concept-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #conceptInput {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+        
+        #conceptInput:focus {
+            outline: none;
+            border-color: rgba(99, 102, 241, 0.8);
+            background: rgba(255,255,255,0.08);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+        
+        #conceptInput::placeholder {
+            color: rgba(255,255,255,0.5);
+            font-weight: 300;
+        }
+        
+        .concept-title {
+            display: none;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+            text-align: center;
+            padding: 16px 20px;
+        }
+        
+        /* Cycle Counter */
+        .cycle-counter {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 8px 12px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .cycle-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.7);
+            min-width: 45px;
+        }
+        
+        .cycle-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .cycle-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .cycle-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+        
+        .cycle-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .cycle-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .cycle-display {
+            min-width: 32px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            padding: 0 8px;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .icon-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .icon-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            padding: 2px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+        }
+        
+        .generate-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+        }
+        
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+        
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .secondary-btn {
+            background: rgba(255,255,255,0.1);
+            color: #ffffff;
+            backdrop-filter: blur(10px);
+        }
+        
+        .secondary-btn:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+        
+        /* Selection Panel */
+        .selection-panel {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            min-width: 280px;
+            max-width: 400px;
+        }
+        
+        .selection-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+        
+        .selection-info {
+            font-size: 13px;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 16px;
+            min-height: 20px;
+        }
+        
+        .selection-help {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.5;
+        }
+        
+        .selection-help div {
+            margin-bottom: 4px;
+        }
+        
+        /* Progress Overlay */
+        .progress-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 32px 40px;
+            text-align: center;
+            z-index: 200;
+            display: none;
+            min-width: 400px;
+            max-width: 500px;
+        }
+        
+        .progress-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 16px;
+        }
+        
+        .progress-info {
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 24px;
+            min-height: 20px;
+        }
+        
+        .progress-bar-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            height: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-concepts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 16px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        
+        .progress-concept {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.9);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: concept-appear 0.3s ease-out;
+        }
+        
+        @keyframes concept-appear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        /* Loading Animation */
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+            margin-left: 8px;
+        }
+        
+        .loading-dots span {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #6366f1;
+            animation: loading-pulse 1.4s ease-in-out infinite both;
+        }
+        
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0s; }
+        
+        @keyframes loading-pulse {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-header {
+                padding: 16px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .cycle-counter {
+                order: -1;
+                align-self: flex-end;
+            }
+            
+            .selection-panel {
+                left: 16px;
+                right: 16px;
+                bottom: 16px;
+                min-width: auto;
+            }
+        }
+        
+        /* Hide elements during generation */
+        .generating .cycle-counter,
+        .generating .action-buttons {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .generating #conceptInput {
+            display: none;
+        }
+        
+        .generating .concept-title {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <!-- Main Header -->
+        <div class="main-header">
+            <div class="header-content">
+                <!-- Brand -->
+                <div class="brand">
+                    <div>
+                        <div class="brand-logo">CreativIA</div>
+                        <div class="brand-subtitle">Concept Graph</div>
+                    </div>
+                </div>
+                
+                <!-- Main Content -->
+                <div class="main-content">
+                    <div class="concept-container">
+                        <input type="text" id="conceptInput" placeholder="Introduce un concepto..." />
+                        <div class="concept-title" id="conceptTitle"></div>
+                    </div>
+                    
+                    <div class="cycle-counter">
+                        <span class="cycle-label">Ciclos</span>
+                        <div class="cycle-controls">
+                            <button class="cycle-btn" id="decreaseCycles">−</button>
+                            <div class="cycle-display" id="cycleCount">3</div>
+                            <button class="cycle-btn" id="increaseCycles">+</button>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="icon-btn generate-btn" id="generateBtn" title="Generar Grafo">
+                            <span id="generateIcon">▶</span>
+                        </button>
+                        <button class="icon-btn secondary-btn" id="toggleLabelsBtn" title="Mostrar/Ocultar Nombres">
+                            <span id="eyeIcon">👀</span>
+                        </button>
+                        <button class="icon-btn secondary-btn" id="clearSelectionBtn" title="Limpiar Selección">
+                            <span>✕</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Selection Panel -->
+        <div class="selection-panel">
+            <div class="selection-title">Selección de Nodos</div>
+            <div class="selection-info" id="selectionInfo">Ningún nodo seleccionado</div>
+            <div class="selection-help">
+                <div>• Click: Seleccionar/deseleccionar nodo</div>
+                <div>• Selecciona 2 nodos para ver el camino de conexión</div>
+                <div>• ESC: Limpiar selección</div>
+            </div>
+        </div>
+        
+        <!-- Progress Overlay -->
+        <div class="progress-overlay" id="progressOverlay">
+            <div class="progress-title">Generando Conceptos</div>
+            <div class="progress-info" id="progressInfo">Iniciando análisis...</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-concepts" id="progressConcepts"></div>
+        </div>
+    </div>
+    
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+### Grafo Conceptual
+##Tecnologias
+Frontend: Threejs web. Todo modulado, separando funcionalidades. Creando una estructura de ficheros robusta para aumentar funcionalidades
+Backend: Python FastAPI
+LLM: OpenRoute / HorizonBeta (https://openrouter.ai/openrouter/horizon-beta)
+## Proceso
+Generador de un grafo interactivo de correlaccion de conceptos.
+1. El usuario introducira un concepto
+2. Se analiza con el LLM si es un concepto o una frase
+    2.1 Si es concepto se utilizara dicho concepto
+    2.2 Si es una frase o texto, se comprimira en un concepto
+3. Se generaran 3 conceptos relacionados
+4. Comienza el ciclo, para cada concepto creado se vuelve al paso 3 dondes se crean conceptos.
+5. Si uno de los conceptos ya existe o hay alguno muy similar, se relacionan los conceptos entre si.
+6. Las relaciones entre los conceptos son bidireccionales.
+##Threejs
+Buscamos una interfaz intuitiva, bonita, dinamica y minimalista.
+El usuario podra introducir el numero de ciclos minimo 2 maximo 5.
+El usuario puede introducir el concepto. 
+Los nodos seran circulos 
+Las relaciones seran lineas entre nodos 
+Los nodos tendran etiquetas que podran ser ocultadas
+Cuando se vayan creando los nodos se mostraran poco a poco el proceso de creacion, habra una barra de carga para cada uno de los ciclos. Que ira avanzando con respecto a la posibilidad.
+3^n (n es el numero de ciclos) sera el maximo de nodos que se pueda crear con ello la barra trabajara.
+##Grafo
+Si un concepto se crea y hay uno altamente similar se considera el mismo.
+Si un concepto ya ha creado su relacion y vuelve a salir despues de otro concepto se crea una relacion pero no se vuelve a generar para dicho concepto.
+##Arquitectura
+Buscamos una Arquitectura limpia y profesional. Tanto la parte de backend como Frontend estara perfectamente estructurada para que sea sencillo añadir nuevas funcionalidades y mejoras.
+
