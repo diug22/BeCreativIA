@@ -31,314 +31,275 @@
         height: 100vh;
         font-weight: 300;
     }
-        /* Static header for graph view */
+        /* Modern Minimalist Header */
         #app-header {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 4rem;
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95));
-            backdrop-filter: blur(20px);
-            display: grid;
-            grid-template-columns: auto 1fr auto;
+            height: 4.5rem;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(25px);
+            display: flex;
             align-items: center;
-            padding: 0 1.5rem;
+            justify-content: space-between;
+            padding: 0 2rem;
             z-index: 1001;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-            gap: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         #app-header.hidden {
-            display: none;
+            transform: translateY(-100%);
+            opacity: 0;
         }
         
-        #app-header button {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--primary-color);
-            font-size: 1.1rem;
-            cursor: pointer;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+        /* Brand Section */
+        .header-brand {
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
             position: relative;
             overflow: hidden;
         }
         
-        #app-header button::before {
+        .header-brand::before {
             content: '';
             position: absolute;
             inset: 0;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(0, 170, 255, 0.3), rgba(255, 255, 255, 0.2));
+            background: linear-gradient(135deg, rgba(0, 170, 255, 0.1), rgba(255, 255, 255, 0.05));
             opacity: 0;
             transition: opacity 0.3s ease;
+            border-radius: 12px;
         }
         
-        #app-header button:hover::before {
+        .header-brand:hover::before {
             opacity: 1;
         }
         
-        #app-header button:hover {
-            transform: scale(1.1) translateY(-1px);
-            box-shadow: 0 4px 20px rgba(0, 170, 255, 0.25);
+        .header-brand:hover {
+            transform: translateY(-1px);
         }
         
-        .header-nav {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
+        .brand-logo {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ffffff, #00aaff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
         }
         
+        /* Concept Title Section */
         .header-concept {
+            flex: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
             text-align: center;
-            min-height: 2rem;
+            max-width: 500px;
+            margin: 0 2rem;
         }
         
-        .concept-display {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1));
-            border: 2px solid transparent;
-            border-radius: 20px;
-            padding: 0.5rem 1.5rem;
-            backdrop-filter: blur(15px);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .concept-display::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 20px;
-            padding: 2px;
-            background: linear-gradient(135deg, 
-                rgba(0, 170, 255, 0.3) 0%, 
-                rgba(255, 255, 255, 0.2) 50%, 
-                rgba(0, 170, 255, 0.3) 100%);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask-composite: xor;
+        .concept-label {
+            color: var(--secondary-color);
+            font-size: 0.65rem;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 0.25rem;
             opacity: 0.7;
-            transition: opacity 0.3s ease;
         }
         
-        .concept-text {
-            color: var(--primary-color);
-            font-size: 0.9rem;
+        .concept-title {
+            font-size: 1.1rem;
             font-weight: 400;
-            letter-spacing: 0.05em;
+            color: var(--primary-color);
+            letter-spacing: 0.02em;
             background: linear-gradient(135deg, #ffffff, #00aaff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             position: relative;
-            z-index: 1;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
         }
         
-        .concept-label {
-            color: var(--secondary-color);
-            font-size: 0.6rem;
-            font-weight: 200;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 0.2rem;
-            opacity: 0.8;
+        .concept-title:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: rgba(0, 170, 255, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(0, 170, 255, 0.1);
+        }
+        
+        /* Controls Section */
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
         
         .header-search-container {
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            max-width: 400px;
             position: relative;
-            justify-self: end;
         }
         
         .header-search-wrapper {
-            flex: 1;
             position: relative;
             display: flex;
             align-items: center;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.08));
-            border: 2px solid transparent;
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
             padding: 0;
             backdrop-filter: blur(15px);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
-        }
-        
-        .header-search-wrapper::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 20px;
-            padding: 2px;
-            background: linear-gradient(135deg, 
-                rgba(0, 170, 255, 0.2) 0%, 
-                transparent 30%, 
-                rgba(255, 255, 255, 0.1) 70%, 
-                rgba(0, 170, 255, 0.2) 100%);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask-composite: xor;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-        
-        .header-search-wrapper:hover::before,
-        .header-search-wrapper.focused::before {
-            opacity: 1;
+            width: 280px;
         }
         
         .header-search-wrapper:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(0, 170, 255, 0.15);
             transform: translateY(-1px);
-            box-shadow: 0 4px 25px rgba(0, 170, 255, 0.12);
+            box-shadow: 0 4px 20px rgba(0, 170, 255, 0.08);
         }
         
         .header-search-wrapper.focused {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(0, 170, 255, 0.3);
             transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(0, 170, 255, 0.2);
+            box-shadow: 0 6px 25px rgba(0, 170, 255, 0.15);
         }
         
         #header-search-input {
             flex: 1;
-            height: 42px;
-            background: transparent !important;
-            border: none !important;
-            outline: none !important;
-            color: var(--primary-color) !important;
-            font-size: 0.85rem !important;
-            font-weight: 300 !important;
-            padding: 0 1rem !important;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-            letter-spacing: 0.02em !important;
-            transition: all 0.3s ease !important;
-        }
-        
-        #header-search-input:focus {
-            color: var(--primary-color) !important;
-            text-shadow: 0 0 15px rgba(0, 170, 255, 0.3) !important;
+            height: 40px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--primary-color);
+            font-size: 0.85rem;
+            font-weight: 300;
+            padding: 0 1.25rem;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            letter-spacing: 0.02em;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
         }
         
         #header-search-input::placeholder {
             color: var(--secondary-color);
-            opacity: 0.6;
+            opacity: 0.5;
             font-weight: 300;
-            letter-spacing: 0.05em;
         }
         
-        .header-iterations {
+        .control-button {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--primary-color);
+            font-size: 1rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1));
-            border: 2px solid transparent;
-            border-radius: 22px;
-            padding: 0.4rem 0.8rem;
-            min-width: 80px;
-            backdrop-filter: blur(15px);
+            justify-content: center;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
         }
         
-        .header-iterations::before {
+        .control-button::before {
             content: '';
             position: absolute;
             inset: 0;
-            border-radius: 22px;
-            padding: 2px;
-            background: linear-gradient(135deg, 
-                rgba(0, 170, 255, 0.2) 0%, 
-                rgba(255, 255, 255, 0.1) 50%, 
-                rgba(0, 170, 255, 0.2) 100%);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask-composite: xor;
+            background: linear-gradient(135deg, rgba(0, 170, 255, 0.2), rgba(255, 255, 255, 0.1));
             opacity: 0;
             transition: opacity 0.3s ease;
+            border-radius: 12px;
         }
         
-        .header-iterations:hover::before {
+        .control-button:hover::before {
             opacity: 1;
         }
         
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 170, 255, 0.2);
+            border-color: rgba(0, 170, 255, 0.3);
+        }
+        
+        /* Iterations Counter */
+        .header-iterations {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            backdrop-filter: blur(15px);
+            transition: all 0.3s ease;
+        }
+        
         .header-iterations:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(0, 170, 255, 0.15);
             transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(0, 170, 255, 0.15);
+            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.1);
         }
         
         .header-iterations button {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            background: transparent;
             border: none;
             color: var(--secondary-color);
-            font-size: 0.9rem;
+            font-size: 1rem;
             cursor: pointer;
-            padding: 0;
             width: 24px;
             height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+            border-radius: 6px;
+            transition: all 0.3s ease;
             font-weight: 300;
-        }
-        
-        .header-iterations button::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(0, 170, 255, 0.3), rgba(255, 255, 255, 0.2));
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .header-iterations button:hover::before {
-            opacity: 1;
         }
         
         .header-iterations button:hover {
             color: var(--primary-color);
-            transform: scale(1.2);
-            box-shadow: 0 2px 12px rgba(0, 170, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
         }
         
         .header-iterations button:disabled {
-            color: rgba(136, 136, 136, 0.2);
+            color: rgba(136, 136, 136, 0.3);
             cursor: not-allowed;
-            background: rgba(255, 255, 255, 0.02);
         }
         
         .header-iterations button:disabled:hover {
             transform: none;
-            box-shadow: none;
-        }
-        
-        .header-iterations button:disabled::before {
-            display: none;
+            background: transparent;
         }
         
         .header-iterations span {
             color: var(--primary-color);
-            font-size: 0.85rem;
-            min-width: 16px;
+            font-size: 0.9rem;
+            min-width: 20px;
             text-align: center;
             font-weight: 400;
-            background: linear-gradient(135deg, #ffffff, #00aaff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
         
         /* Initial Screen Styles */
@@ -374,6 +335,11 @@
             letter-spacing: -0.02em;
             margin-bottom: 1rem;
             position: relative;
+            background: linear-gradient(135deg, #ffffff, #00aaff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 170, 255, 0.3);
         }
         
         .subtitle {
@@ -588,6 +554,7 @@
             z-index: 5 !important;
             opacity: 1 !important;
             transition: all 0.3s ease !important;
+            text-transform: uppercase !important;
         }
         
         #concept-input:focus {
@@ -701,6 +668,34 @@
         
         /* Responsive Design */
         @media (max-width: 768px) {
+            /* Header responsive */
+            #app-header {
+                padding: 0 1rem;
+                height: 4rem;
+            }
+            
+            .header-concept {
+                margin: 0 1rem;
+            }
+            
+            .concept-title {
+                font-size: 0.9rem;
+                padding: 0.4rem 1rem;
+            }
+            
+            .brand-logo {
+                font-size: 1.2rem;
+            }
+            
+            .header-search-wrapper {
+                width: 200px;
+            }
+            
+            .header-controls {
+                gap: 0.5rem;
+            }
+            
+            /* Main screen responsive */
             .title-container {
                 margin-bottom: 5rem;
             }
@@ -731,6 +726,36 @@
             }
         }
         
+        @media (max-width: 480px) {
+            /* Ultra compact header for mobile */
+            #app-header {
+                flex-direction: column;
+                height: auto;
+                padding: 0.75rem 1rem;
+                gap: 0.75rem;
+            }
+            
+            .header-concept {
+                margin: 0;
+                order: 1;
+            }
+            
+            .header-brand {
+                order: 2;
+                padding: 0.25rem 0.5rem;
+            }
+            
+            .header-controls {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .header-search-wrapper {
+                width: 150px;
+            }
+        }
+        
         @media (max-height: 600px) {
             .title-container {
                 margin-bottom: 2rem;
@@ -751,19 +776,34 @@
     </style>
 </head>
 <body>
-    <!-- Static 2D header (hidden initially on initial screen) -->
+    <!-- Modern Minimalist Header -->
     <header id="app-header" class="hidden">
-        <button id="header-back" title="Volver al inicio">←</button>
-        <button id="header-toggle" title="Alternar etiquetas">👀</button>
-        <div class="header-search-container">
-            <div class="header-search-wrapper" id="header-search-wrapper">
-                <input type="text" id="header-search-input" placeholder="Buscar o añadir concepto..." maxlength="35" autocomplete="off" spellcheck="false">
+        <!-- Brand Section -->
+        <div class="header-brand" id="header-brand" title="Volver al inicio">
+            <div class="brand-logo">BeCreativIA</div>
+        </div>
+        
+        <!-- Concept Title Section -->
+        <div class="header-concept">
+            <div class="concept-label">Explorando</div>
+            <div class="concept-title" id="concept-title">Concepto</div>
+        </div>
+        
+        <!-- Controls Section -->
+        <div class="header-controls">
+            <div class="header-search-container">
+                <div class="header-search-wrapper" id="header-search-wrapper">
+                    <input type="text" id="header-search-input" placeholder="Buscar o añadir concepto..." maxlength="35" autocomplete="off" spellcheck="false">
+                </div>
             </div>
+            
             <div class="header-iterations">
                 <button id="header-decrease-iterations" type="button">‹</button>
-                <span id="header-iteration-count">2</span>
+                <span id="header-iteration-count">1</span>
                 <button id="header-increase-iterations" type="button">›</button>
             </div>
+            
+            <button class="control-button" id="header-toggle" title="Alternar etiquetas">👀</button>
         </div>
     </header>
     <!-- Initial 2D Screen -->
@@ -811,14 +851,34 @@
             const conceptInput = document.getElementById('concept-input');
             const inputLine = document.getElementById('input-line');
             
+            // Header elements
+            const headerSearchInput = document.getElementById('header-search-input');
+            const headerSearchWrapper = document.getElementById('header-search-wrapper');
+            const headerBrand = document.getElementById('header-brand');
+            const conceptTitle = document.getElementById('concept-title');
+            const headerIterationCount = document.getElementById('header-iteration-count');
+            const headerDecreaseBtn = document.getElementById('header-decrease-iterations');
+            const headerIncreaseBtn = document.getElementById('header-increase-iterations');
+            
             // Update iteration display
             function updateIterationDisplay() {
                 iterationCountEl.textContent = currentIterations;
                 decreaseBtn.disabled = currentIterations <= minIterations;
                 increaseBtn.disabled = currentIterations >= maxIterations;
+                
+                // Update header iteration display
+                if (headerIterationCount) {
+                    headerIterationCount.textContent = currentIterations;
+                }
+                if (headerDecreaseBtn) {
+                    headerDecreaseBtn.disabled = currentIterations <= minIterations;
+                }
+                if (headerIncreaseBtn) {
+                    headerIncreaseBtn.disabled = currentIterations >= maxIterations;
+                }
             }
             
-            // Iteration controls
+            // Iteration controls (main screen)
             decreaseBtn.addEventListener('click', () => {
                 if (currentIterations > minIterations) {
                     currentIterations--;
@@ -833,7 +893,26 @@
                 }
             });
             
-            // Input focus effects
+            // Header iteration controls
+            if (headerDecreaseBtn) {
+                headerDecreaseBtn.addEventListener('click', () => {
+                    if (currentIterations > minIterations) {
+                        currentIterations--;
+                        updateIterationDisplay();
+                    }
+                });
+            }
+            
+            if (headerIncreaseBtn) {
+                headerIncreaseBtn.addEventListener('click', () => {
+                    if (currentIterations < maxIterations) {
+                        currentIterations++;
+                        updateIterationDisplay();
+                    }
+                });
+            }
+            
+            // Input focus effects (main screen)
             const inputWrapper = document.getElementById('input-wrapper');
             
             conceptInput.addEventListener('focus', () => {
@@ -847,7 +926,7 @@
                 }
             });
             
-            // Typing effects
+            // Typing effects (main screen)
             conceptInput.addEventListener('input', () => {
                 if (inputWrapper) {
                     if (conceptInput.value.length > 0) {
@@ -857,6 +936,29 @@
                     }
                 }
             });
+            
+            // Header search input focus effects
+            if (headerSearchInput && headerSearchWrapper) {
+                headerSearchInput.addEventListener('focus', () => {
+                    headerSearchWrapper.classList.add('focused');
+                });
+                
+                headerSearchInput.addEventListener('blur', () => {
+                    headerSearchWrapper.classList.remove('focused');
+                });
+                
+                // Header search functionality - Let SearchManager handle this
+                // SearchManager will bind to the same input and handle all events
+            }
+            
+            // Header brand click to return home
+            if (headerBrand) {
+                headerBrand.addEventListener('click', () => {
+                    if (window.conceptGraphApp) {
+                        window.conceptGraphApp.returnToInitialState();
+                    }
+                });
+            }
             
             // Enter key handling
             conceptInput.addEventListener('keydown', (event) => {
@@ -886,6 +988,21 @@
             window.setIterations = (count) => {
                 currentIterations = Math.max(minIterations, Math.min(maxIterations, count));
                 updateIterationDisplay();
+            };
+            
+            // Function to update concept title in header
+            window.updateConceptTitle = (concept) => {
+                if (conceptTitle && concept) {
+                    conceptTitle.textContent = concept;
+                    console.log('Header concept title updated to:', concept);
+                }
+            };
+            
+            // Function to clear concept title
+            window.clearConceptTitle = () => {
+                if (conceptTitle) {
+                    conceptTitle.textContent = 'Concepto';
+                }
             };
         });
     </script>

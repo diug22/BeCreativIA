@@ -27,6 +27,12 @@ export class GraphRenderer {
         this.hiddenNodes = new Set();
         this.hiddenEdges = new Set();
         
+        // Background system - only nebula
+        this.backgroundElements = {
+            nebula: null
+        };
+        this.nebulaVisible = false; // Initially hidden until first node appears
+        
         // Raycaster for mouse picking
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
@@ -77,6 +83,9 @@ export class GraphRenderer {
         // Setup lights
         this.setupLights();
         
+        // Setup background and atmosphere
+        this.setupBackground();
+        
         // Initialize tunnel effect
         this.tunnelEffect = new TunnelEffect(this.scene, this.camera);
         
@@ -111,6 +120,110 @@ export class GraphRenderer {
         this.scene.add(pointLight);
     }
 
+    setupBackground() {
+        // Keep black background
+        this.renderer.setClearColor(0x000000);
+        
+        // Create volumetric nebula surrounding the graph (initially hidden)
+        this.createVolumetricNebula();
+        
+        console.log('GraphRenderer: Background setup complete');
+    }
+    
+    // Removed fog and gradient background methods - only nebula remains
+    
+    createVolumetricNebula() {
+        // Create multiple layers of colorful nebula at different distances for depth
+        this.createNebulaLayer(120, 0.03, 800, 'distant');   // Purple/violet distant layer
+        this.createNebulaLayer(90, 0.05, 600, 'medium');     // Blue/cyan medium layer  
+        this.createNebulaLayer(65, 0.07, 500, 'close');      // Pink/magenta close layer
+        this.createNebulaLayer(45, 0.09, 400, 'inner');      // Orange/yellow inner layer
+        
+        // Initially hide all nebula layers
+        this.hideNebula();
+        
+        console.log('GraphRenderer: Colorful volumetric nebula created with 4 layers');
+    }
+    
+    createNebulaLayer(radius, opacity, particleCount, layerType) {
+        // Create individual sphere geometries instead of points
+        const nebulaGroup = new THREE.Group();
+        
+        // Color schemes for different layers
+        const colorSchemes = {
+            distant: { r: 0.4, g: 0.2, b: 0.8 },  // Purple/violet
+            medium: { r: 0.1, g: 0.4, b: 0.9 },   // Blue/cyan
+            close: { r: 0.8, g: 0.3, b: 0.6 },    // Pink/magenta  
+            inner: { r: 0.9, g: 0.5, b: 0.2 }     // Orange/yellow
+        };
+        
+        const baseColor = colorSchemes[layerType] || colorSchemes.medium;
+        
+        // Generate particles in spherical distribution
+        for (let i = 0; i < particleCount; i++) {
+            // Spherical coordinates for even distribution
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            const r = radius + (Math.random() - 0.5) * 25; // Increased radius variation
+            
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+            
+            // Create small sphere geometry for more nebula-like appearance
+            const particleSize = 0.3 + Math.random() * 0.8;
+            const sphereGeometry = new THREE.SphereGeometry(particleSize, 8, 6);
+            
+            // Color variation within the layer's scheme
+            const colorVariation = 0.3;
+            const finalColor = {
+                r: Math.max(0, Math.min(1, baseColor.r + (Math.random() - 0.5) * colorVariation)),
+                g: Math.max(0, Math.min(1, baseColor.g + (Math.random() - 0.5) * colorVariation)),
+                b: Math.max(0, Math.min(1, baseColor.b + (Math.random() - 0.5) * colorVariation))
+            };
+            
+            // Distance-based intensity
+            const distanceFactor = 1 - (r - radius + 12) / 25;
+            const intensity = (0.3 + Math.random() * 0.4) * Math.max(0.4, distanceFactor);
+            
+            const material = new THREE.MeshBasicMaterial({
+                color: new THREE.Color(
+                    finalColor.r * intensity,
+                    finalColor.g * intensity, 
+                    finalColor.b * intensity
+                ),
+                transparent: true,
+                opacity: opacity * (0.7 + Math.random() * 0.3),
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            
+            const particle = new THREE.Mesh(sphereGeometry, material);
+            particle.position.set(x, y, z);
+            
+            // Add slight random rotation for more organic look
+            particle.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+            
+            nebulaGroup.add(particle);
+        }
+        
+        nebulaGroup.name = `nebulaLayer_${layerType}_${radius}`;
+        nebulaGroup.renderOrder = -2; // Render before other elements
+        this.scene.add(nebulaGroup);
+        
+        // Store reference for control
+        if (!this.backgroundElements.nebula) {
+            this.backgroundElements.nebula = [];
+        }
+        this.backgroundElements.nebula.push(nebulaGroup);
+        
+        return nebulaGroup;
+    }
+
 
     setupEventListeners() {
         // Handle window resize
@@ -139,6 +252,8 @@ export class GraphRenderer {
         const deltaTime = currentTime - (this.lastTime || currentTime);
         this.lastTime = currentTime;
         
+        // Animate background nebula
+        this.animateNebula();
         
         this.renderer.render(this.scene, this.camera);
     }
@@ -722,6 +837,46 @@ export class GraphRenderer {
             }
         });
     }
+    
+    // Nebula control methods (simplified - only nebula now)
+    showNebulaOnFirstNode() {
+        if (!this.nebulaVisible) {
+            this.showNebula();
+            this.nebulaVisible = true;
+            console.log('GraphRenderer: Nebula made visible with first node');
+        }
+    }
+    
+    showNebula() {
+        if (this.backgroundElements.nebula) {
+            this.backgroundElements.nebula.forEach(layer => {
+                layer.visible = true;
+            });
+        }
+    }
+    
+    hideNebula() {
+        if (this.backgroundElements.nebula) {
+            this.backgroundElements.nebula.forEach(layer => {
+                layer.visible = false;
+            });
+        }
+    }
+    
+    // Add subtle animation to nebula layers
+    animateNebula() {
+        if (!this.backgroundElements.nebula || !this.nebulaVisible) return;
+        
+        const time = Date.now() * 0.00008; // Slightly slower animation
+        this.backgroundElements.nebula.forEach((layer, index) => {
+            // Very slow rotation for each layer in different directions
+            const rotationSpeed = (index % 2 === 0 ? 1 : -1) * 0.08;
+            layer.rotation.y = time * rotationSpeed;
+            layer.rotation.x = time * rotationSpeed * 0.25;
+        });
+    }
+    
+    // Toggle background functionality removed - only nebula remains
 
     // Node selection methods
     selectNode(concept) {

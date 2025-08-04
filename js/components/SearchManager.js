@@ -17,9 +17,9 @@ export class SearchManager {
         this.suggestionsContainer = null;
         
         // State
-        this.currentIterations = 2;
+        this.currentIterations = 1; // Will sync with global state
         this.minIterations = 1;
-        this.maxIterations = 4;
+        this.maxIterations = 5;
         this.isSearching = false;
         this.suggestionsVisible = false;
         this.maxSuggestions = 5;
@@ -37,19 +37,16 @@ export class SearchManager {
         this.bindElements();
         this.createSuggestions();
         this.setupEventListeners();
-        this.updateIterationDisplay();
         
         console.log('SearchManager: Initialized');
     }
     
     bindElements() {
         this.searchInput = document.getElementById('header-search-input');
-        this.iterationCount = document.getElementById('header-iteration-count');
-        this.decreaseBtn = document.getElementById('header-decrease-iterations');
-        this.increaseBtn = document.getElementById('header-increase-iterations');
         
         if (!this.searchInput) {
-            console.error('SearchManager: Search input not found');
+            console.error('SearchManager: Search input not found - element with ID "header-search-input" does not exist');
+            console.log('SearchManager: Available inputs:', document.querySelectorAll('input'));
             return;
         }
         
@@ -57,6 +54,7 @@ export class SearchManager {
         console.log('SearchManager: Input found:', !!this.searchInput);
         console.log('SearchManager: Input disabled?', this.searchInput.disabled);
         console.log('SearchManager: Input display:', window.getComputedStyle(this.searchInput).display);
+        console.log('SearchManager: Header visibility:', document.getElementById('app-header')?.classList.contains('hidden'));
         
         // Ensure input is enabled and accessible
         this.searchInput.disabled = false;
@@ -71,36 +69,73 @@ export class SearchManager {
         // Create suggestions container
         this.suggestionsContainer = document.createElement('div');
         this.suggestionsContainer.id = 'search-suggestions';
+        
+        // Get positioning elements first
+        const headerControls = document.querySelector('.header-controls');
+        const headerSearchContainer = document.querySelector('.header-search-container');
+        
+        // Dynamic CSS based on positioning strategy
+        const isFixed = headerSearchContainer === null && headerControls === null;
+        
         this.suggestionsContainer.style.cssText = `
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.98));
-            border: 2px solid rgba(0, 170, 255, 0.2);
-            border-top: none;
-            border-radius: 0 0 18px 18px;
-            max-height: 250px;
-            overflow-y: auto;
-            z-index: 10000;
-            display: none;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 170, 255, 0.1);
+            position: ${isFixed ? 'fixed' : 'absolute'} !important;
+            top: ${isFixed ? '0px' : '100%'} !important;
+            left: ${isFixed ? '0px' : '0'} !important;
+            right: ${isFixed ? 'auto' : '0'} !important;
+            width: ${isFixed ? '280px' : '100%'} !important;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.98)) !important;
+            border: 2px solid rgba(0, 170, 255, 0.2) !important;
+            border-top: none !important;
+            border-radius: 0 0 18px 18px !important;
+            max-height: 250px !important;
+            overflow-y: auto !important;
+            z-index: 99999 !important;
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            backdrop-filter: blur(20px) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 170, 255, 0.1) !important;
+            pointer-events: all !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
         `;
         
-        // Insert after search wrapper
-        const searchWrapper = document.getElementById('header-search-wrapper');
-        if (searchWrapper) {
-            searchWrapper.style.position = 'relative';
-            searchWrapper.appendChild(this.suggestionsContainer);
+        // Insert after header controls container to avoid overflow issues
+        
+        if (headerSearchContainer) {
+            // Position relative to search container, not wrapper (to avoid overflow: hidden)
+            headerSearchContainer.style.position = 'relative';
+            headerSearchContainer.appendChild(this.suggestionsContainer);
+            console.log('SearchManager: Suggestions container added to search container');
+        } else if (headerControls) {
+            // Fallback to header controls
+            headerControls.style.position = 'relative';
+            headerControls.appendChild(this.suggestionsContainer);
+            console.log('SearchManager: Suggestions container added to header controls');
         } else {
-            // Fallback to search input parent
-            const searchContainer = this.searchInput.parentElement;
-            searchContainer.style.position = 'relative';
-            searchContainer.appendChild(this.suggestionsContainer);
+            // Last fallback - add to body with fixed positioning
+            document.body.appendChild(this.suggestionsContainer);
+            this.suggestionsContainer.style.position = 'fixed !important';
+            console.log('SearchManager: Suggestions container added to body with fixed positioning');
         }
         
-        console.log('SearchManager: Suggestions container created');
+        console.log('SearchManager: Suggestions container created and positioned');
+    }
+    
+    updateFixedPosition() {
+        if (!this.searchInput) return;
+        
+        // Get the input's position relative to viewport
+        const inputRect = this.searchInput.getBoundingClientRect();
+        
+        // Position the suggestions container right below the input
+        this.suggestionsContainer.style.top = `${inputRect.bottom}px`;
+        this.suggestionsContainer.style.left = `${inputRect.left}px`;
+        this.suggestionsContainer.style.width = `${inputRect.width}px`;
+        this.suggestionsContainer.style.right = 'auto';
+        
+        console.log('SearchManager: Fixed position updated - top:', inputRect.bottom, 'left:', inputRect.left, 'width:', inputRect.width);
     }
     
     setupEventListeners() {
@@ -132,18 +167,8 @@ export class SearchManager {
             setTimeout(() => this.hideSuggestions(), 150);
         });
         
-        // Iteration controls
-        if (this.decreaseBtn) {
-            this.decreaseBtn.addEventListener('click', () => {
-                this.decreaseIterations();
-            });
-        }
-        
-        if (this.increaseBtn) {
-            this.increaseBtn.addEventListener('click', () => {
-                this.increaseIterations();
-            });
-        }
+        // Iteration controls - Let HTML handle these, just sync state
+        // The iteration controls are already handled by the HTML script
         
         console.log('SearchManager: Event listeners set up');
     }
@@ -171,19 +196,38 @@ export class SearchManager {
         
         const query = this.getSearchQuery().toLowerCase();
         
-        if (query.length === 0) {
+        if (query.length < 2) { // Show suggestions only after 2 characters
             this.hideSuggestions();
             return;
         }
         
         // Get all node concepts from the graph
-        const allConcepts = this.graphRenderer && this.graphRenderer.nodes ? 
+        let allConcepts = this.graphRenderer && this.graphRenderer.nodes ? 
             Array.from(this.graphRenderer.nodes.keys()) : [];
         
-        // Filter concepts that match the query
+        // For testing purposes, if no nodes exist, use some sample concepts
+        if (allConcepts.length === 0) {
+            allConcepts = ['CREATIVIDAD', 'INNOVACIÓN', 'DISEÑO', 'ARTE', 'TECNOLOGÍA', 'CIENCIA'];
+            console.log('SearchManager: Using sample concepts for testing');
+        }
+        
+        console.log('SearchManager: Available concepts:', allConcepts.length);
+        console.log('SearchManager: Query:', query);
+        console.log('SearchManager: All concepts:', allConcepts);
+        console.log('SearchManager: GraphRenderer nodes exist?', !!this.graphRenderer?.nodes);
+        
+        // Filter concepts that match the query (more flexible matching)
         const suggestions = allConcepts
-            .filter(concept => concept.toLowerCase().includes(query))
+            .filter(concept => {
+                const conceptLower = concept.toLowerCase();
+                // Check for partial matches
+                return conceptLower.includes(query) || 
+                       query.includes(conceptLower) ||
+                       ConceptUtils.calculateSimilarity(conceptLower, query) > 0.6;
+            })
             .slice(0, this.maxSuggestions);
+        
+        console.log('SearchManager: Found suggestions:', suggestions);
         
         if (suggestions.length === 0) {
             this.hideSuggestions();
@@ -207,6 +251,8 @@ export class SearchManager {
         });
         
         this.suggestionsContainer.innerHTML = suggestionsHTML;
+        console.log('SearchManager: Suggestions HTML:', suggestionsHTML);
+        console.log('SearchManager: Container innerHTML set, showing suggestions...');
         this.showSuggestions();
         
         // Add click listeners to suggestions
@@ -219,10 +265,28 @@ export class SearchManager {
     }
     
     showSuggestions() {
-        if (!this.suggestionsContainer) return;
+        if (!this.suggestionsContainer) {
+            console.error('SearchManager: Suggestions container not found when trying to show');
+            return;
+        }
         
+        // Calculate position if using fixed positioning
+        if (this.suggestionsContainer.style.position === 'fixed') {
+            this.updateFixedPosition();
+        }
+        
+        console.log('SearchManager: Showing suggestions container');
         this.suggestionsContainer.style.display = 'block';
+        this.suggestionsContainer.style.visibility = 'visible';
+        this.suggestionsContainer.style.opacity = '1';
         this.suggestionsVisible = true;
+        
+        // Force the container to be visible and above everything
+        this.suggestionsContainer.style.zIndex = '99999';
+        this.suggestionsContainer.style.pointerEvents = 'all';
+        
+        console.log('SearchManager: Suggestions container display:', this.suggestionsContainer.style.display);
+        console.log('SearchManager: Suggestions container visibility:', this.suggestionsContainer.style.visibility);
         
         // Add suggestion item styles
         if (!document.getElementById('suggestion-styles')) {
@@ -231,7 +295,7 @@ export class SearchManager {
             style.textContent = `
                 .suggestion-item {
                     padding: 0.75rem 1rem;
-                    color: #ffffff;
+                    color: #ffffff !important;
                     cursor: pointer;
                     font-size: 0.8rem;
                     font-weight: 300;
@@ -241,6 +305,10 @@ export class SearchManager {
                     position: relative;
                     overflow: hidden;
                     background: transparent;
+                    text-transform: uppercase;
+                    display: block !important;
+                    width: 100%;
+                    box-sizing: border-box;
                 }
                 
                 .suggestion-item::before {
@@ -260,7 +328,7 @@ export class SearchManager {
                 }
                 
                 .suggestion-item:hover {
-                    background: rgba(0, 170, 255, 0.08);
+                    background: rgba(0, 170, 255, 0.08) !important;
                     transform: translateX(4px);
                     padding-left: 1.25rem;
                     text-shadow: 0 0 10px rgba(0, 170, 255, 0.4);
@@ -276,13 +344,20 @@ export class SearchManager {
                 }
             `;
             document.head.appendChild(style);
+            console.log('SearchManager: Suggestion styles added to document');
         }
     }
     
     hideSuggestions() {
-        if (!this.suggestionsContainer) return;
+        if (!this.suggestionsContainer) {
+            console.log('SearchManager: No suggestions container to hide');
+            return;
+        }
         
+        console.log('SearchManager: Hiding suggestions container');
         this.suggestionsContainer.style.display = 'none';
+        this.suggestionsContainer.style.visibility = 'hidden';
+        this.suggestionsContainer.style.opacity = '0';
         this.suggestionsVisible = false;
     }
     
@@ -303,6 +378,9 @@ export class SearchManager {
         if (!query || this.isSearching) {
             return;
         }
+        
+        // Sync with global iterations
+        this.currentIterations = this.getCurrentIterations();
         
         this.isSearching = true;
         this.setSearching(true);
@@ -395,7 +473,7 @@ export class SearchManager {
         // Start a mini growth phase for the new subgraph
         if (this.graphRenderer.growthPhaseManager && !this.graphRenderer.growthPhaseManager.isPhaseActive()) {
             // Calculate expected nodes for this expansion
-            const expectedNodes = this.calculateExpectedNodes(this.currentIterations);
+            const expectedNodes = this.calculateExpectedNodes();
             
             // Generate concepts from the new node
             await this.generateSubgraph(cleanConcept, expectedNodes);
@@ -408,7 +486,7 @@ export class SearchManager {
         
         // Emit node created event
         if (this.onNodeCreated) {
-            this.onNodeCreated({ concept: cleanConcept, iterations: this.currentIterations });
+            this.onNodeCreated({ concept: cleanConcept, iterations: this.getCurrentIterations() });
         }
     }
     
@@ -432,7 +510,7 @@ export class SearchManager {
         let currentConcepts = [rootConcept];
         let allConcepts = new Set([rootConcept]);
         
-        for (let cycle = 0; cycle < this.currentIterations; cycle++) {
+        for (let cycle = 0; cycle < this.getCurrentIterations(); cycle++) {
             const nextConcepts = [];
             
             for (const concept of currentConcepts) {
@@ -492,41 +570,18 @@ export class SearchManager {
         await this.graphRenderer.createNode(concept, randomPos, true);
     }
     
-    calculateExpectedNodes(iterations) {
+    calculateExpectedNodes(iterations = null) {
+        const actualIterations = iterations || this.getCurrentIterations();
         let total = 1; // Root node
-        for (let i = 0; i < iterations; i++) {
+        for (let i = 0; i < actualIterations; i++) {
             total += Math.pow(3, i + 1);
         }
         return total;
     }
     
-    // Iteration management
-    decreaseIterations() {
-        if (this.currentIterations > this.minIterations) {
-            this.currentIterations--;
-            this.updateIterationDisplay();
-        }
-    }
-    
-    increaseIterations() {
-        if (this.currentIterations < this.maxIterations) {
-            this.currentIterations++;
-            this.updateIterationDisplay();
-        }
-    }
-    
-    updateIterationDisplay() {
-        if (this.iterationCount) {
-            this.iterationCount.textContent = this.currentIterations;
-        }
-        
-        if (this.decreaseBtn) {
-            this.decreaseBtn.disabled = this.currentIterations <= this.minIterations;
-        }
-        
-        if (this.increaseBtn) {
-            this.increaseBtn.disabled = this.currentIterations >= this.maxIterations;
-        }
+    // Iteration management - handled by HTML script, just sync when needed
+    getCurrentIterations() {
+        return window.getCurrentIterations ? window.getCurrentIterations() : this.currentIterations;
     }
     
     // UI State management

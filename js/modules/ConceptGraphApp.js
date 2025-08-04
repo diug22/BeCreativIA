@@ -27,6 +27,8 @@ export class ConceptGraphApp {
         window.resetGraph = () => this.resetGraph();
         window.toggleLabels = () => this.toggleLabels();
         window.clearSelection = () => this.clearSelection();
+        
+        // Background functions removed - only nebula remains
     }
     /**
      * Initialize expansion components (SearchManager and ContextMenu)
@@ -36,6 +38,11 @@ export class ConceptGraphApp {
         this.renderer.initializeExpansionComponents(this.apiService);
         
         console.log('ConceptGraphApp: Expansion components initialized');
+        
+        // Ensure SearchManager is active immediately for debugging
+        if (this.renderer.searchManager) {
+            console.log('ConceptGraphApp: SearchManager is ready:', !!this.renderer.searchManager);
+        }
     }
 
     /**
@@ -43,13 +50,17 @@ export class ConceptGraphApp {
      */
     setupHeaderControls() {
         this.headerEl = document.getElementById('app-header');
-        const backBtn = document.getElementById('header-back');
+        const brandBtn = document.getElementById('header-brand');
         const toggleBtn = document.getElementById('header-toggle');
-        if (backBtn) backBtn.addEventListener('click', () => this.returnToInitialState());
-        if (toggleBtn) toggleBtn.addEventListener('click', () => {
-            this.toggleLabels();
-            toggleBtn.textContent = this.renderer.labelsVisible ? '👀' : '🙈';
-        });
+        
+        // Header brand click already handled in HTML script
+        // We just need to set up the toggle button
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                this.toggleLabels();
+                toggleBtn.textContent = this.renderer.labelsVisible ? '👀' : '🙈';
+            });
+        }
     }
     
     async startGenerationWithConcept(concept) {
@@ -85,6 +96,11 @@ export class ConceptGraphApp {
         }
         // Show static HTML header
         if (this.headerEl) this.headerEl.classList.remove('hidden');
+        
+        // Update concept title in header
+        if (window.updateConceptTitle) {
+            window.updateConceptTitle(concept);
+        }
         
         // Start tunnel effect
         this.renderer.setGeneratingState(concept);
@@ -152,6 +168,9 @@ export class ConceptGraphApp {
         // Add initial concept to graph
         await this.apiService.addConceptToGraph(initialConcept);
         const initialNode = await this.renderer.createNode(initialConcept, { x: 0, y: 0, z: 0 }, true);
+        
+        // Show nebula when first node appears (after tunnel ends)
+        this.renderer.showNebulaOnFirstNode();
         
         // Notify tunnel effect that first node was generated
         if (this.renderer.tunnelEffect) {
@@ -279,6 +298,11 @@ export class ConceptGraphApp {
         
         // Clear and reset renderer state
         this.renderer.clear();
+        
+        // Clear concept title in header
+        if (window.clearConceptTitle) {
+            window.clearConceptTitle();
+        }
         
         // Hide any open context menus
         if (this.renderer.contextMenu && this.renderer.contextMenu.isVisible) {
