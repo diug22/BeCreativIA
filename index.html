@@ -538,6 +538,61 @@
             text-shadow: 0 0 10px rgba(0, 170, 255, 0.2);
         }
         
+        .start-button {
+            position: relative;
+            margin-top: 3rem;
+            padding: 1rem 3rem;
+            background: linear-gradient(135deg, rgba(0, 170, 255, 0.1), rgba(0, 170, 255, 0.05));
+            border: 2px solid transparent;
+            border-radius: 30px;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            backdrop-filter: blur(25px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-width: 200px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 170, 255, 0.1);
+        }
+        
+        .start-button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 30px;
+            padding: 2px;
+            background: linear-gradient(135deg, 
+                rgba(0, 170, 255, 0.4) 0%, 
+                rgba(0, 170, 255, 0.2) 30%, 
+                transparent 60%, 
+                rgba(255, 255, 255, 0.1) 100%);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: xor;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        
+        .start-button:hover::before {
+            opacity: 1;
+        }
+        
+        .start-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 50px rgba(0, 170, 255, 0.25), 0 4px 20px rgba(0, 170, 255, 0.15);
+            background: linear-gradient(135deg, rgba(0, 170, 255, 0.15), rgba(0, 170, 255, 0.08));
+            text-shadow: 0 0 20px rgba(0, 170, 255, 0.4);
+        }
+        
+        .start-button:active {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 170, 255, 0.2);
+        }
+        
         #concept-input {
             width: 100%;
             height: 70px;
@@ -709,6 +764,13 @@
                 padding: 0.75rem 1.5rem;
             }
             
+            .start-button {
+                margin-top: 2rem;
+                padding: 0.8rem 2.5rem;
+                font-size: 1rem;
+                min-width: 180px;
+            }
+            
             .iteration-button {
                 width: 35px;
                 height: 35px;
@@ -723,6 +785,13 @@
             .instruction {
                 bottom: 2rem;
                 font-size: 0.75rem;
+            }
+            
+            .start-button {
+                margin-top: 1.5rem;
+                padding: 0.7rem 2rem;
+                font-size: 0.9rem;
+                min-width: 160px;
             }
         }
         
@@ -831,7 +900,9 @@
             </div>
         </div>
         
-        <div class="instruction">Presiona Enter para explorar</div>
+        <button class="start-button" id="start-button" type="button">Empezar</button>
+        
+        <div class="instruction">O presiona Enter para explorar</div>
     </div>
     
     <!-- Three.js Container -->
@@ -850,6 +921,7 @@
             const increaseBtn = document.getElementById('increase-iterations');
             const conceptInput = document.getElementById('concept-input');
             const inputLine = document.getElementById('input-line');
+            const startButton = document.getElementById('start-button');
             
             // Header elements
             const headerSearchInput = document.getElementById('header-search-input');
@@ -960,25 +1032,37 @@
                 });
             }
             
+            // Function to start generation
+            function startGeneration() {
+                const concept = conceptInput.value.trim();
+                if (concept) {
+                    // Set cycle count for the app
+                    if (window.conceptGraphApp) {
+                        window.conceptGraphApp.cycleCount = currentIterations;
+                        window.conceptGraphApp.startGenerationWithConcept(concept);
+                    } else {
+                        // Fallback: store for when app loads
+                        window.pendingGeneration = {
+                            concept: concept,
+                            iterations: currentIterations
+                        };
+                    }
+                }
+            }
+            
             // Enter key handling
             conceptInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
-                    const concept = conceptInput.value.trim();
-                    if (concept) {
-                        // Set cycle count for the app
-                        if (window.conceptGraphApp) {
-                            window.conceptGraphApp.cycleCount = currentIterations;
-                            window.conceptGraphApp.startGenerationWithConcept(concept);
-                        } else {
-                            // Fallback: store for when app loads
-                            window.pendingGeneration = {
-                                concept: concept,
-                                iterations: currentIterations
-                            };
-                        }
-                    }
+                    startGeneration();
                 }
             });
+            
+            // Start button click handling
+            if (startButton) {
+                startButton.addEventListener('click', () => {
+                    startGeneration();
+                });
+            }
             
             // Initialize display
             updateIterationDisplay();
