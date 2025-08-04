@@ -61,6 +61,18 @@ export class ConceptGraphApp {
                 toggleBtn.textContent = this.renderer.labelsVisible ? '👀' : '🙈';
             });
         }
+        
+        // Set up video recording button
+        const videoBtn = document.getElementById('header-video');
+        if (videoBtn) {
+            videoBtn.addEventListener('click', () => {
+                if (window.openVideoModal) {
+                    window.openVideoModal();
+                } else {
+                    console.log('Video recording not available');
+                }
+            });
+        }
     }
     
     async startGenerationWithConcept(concept) {
@@ -70,7 +82,16 @@ export class ConceptGraphApp {
             return;
         }
         
+        // Track concept generation start
+        if (window.va) {
+            window.va('track', 'Concept Generation Started', {
+                concept: concept.substring(0, 20), // Limit to 20 chars for privacy
+                iterations: this.cycleCount
+            });
+        }
+        
         this.isGenerating = true;
+        this.generationStartTime = Date.now();
         
         // Hide HTML initial screen
         const initialScreen = document.getElementById('initial-screen');
@@ -111,6 +132,15 @@ export class ConceptGraphApp {
             await this.performGeneration(concept.trim());
         } catch (error) {
             console.error('Error during generation:', error);
+            
+            // Track generation errors
+            if (window.va) {
+                window.va('track', 'Generation Error', {
+                    error: error.message,
+                    concept: concept.substring(0, 20)
+                });
+            }
+            
             this.renderer.hideProgress();
         } finally {
             this.isGenerating = false;
@@ -254,6 +284,15 @@ export class ConceptGraphApp {
         }, 1500);
         
         console.log('Generación completada');
+        
+        // Track generation completion
+        if (window.va) {
+            window.va('track', 'Concept Generation Completed', {
+                totalNodes: Object.keys(this.renderer.nodes || {}).length,
+                iterations: this.cycleCount,
+                duration: Date.now() - this.generationStartTime
+            });
+        }
     }
     
     calculateMaxNodes(cycles) {
@@ -291,6 +330,11 @@ export class ConceptGraphApp {
     
     returnToInitialState() {
         console.log('ConceptGraphApp: Returning to initial state...');
+        
+        // Track return to home
+        if (window.va) {
+            window.va('track', 'Return to Home');
+        }
         
         // Reset generation state
         this.isGenerating = false;

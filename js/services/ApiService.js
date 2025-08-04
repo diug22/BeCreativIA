@@ -1,15 +1,49 @@
 export class ApiService {
-    constructor(baseUrl = 'http://localhost:8000') {
-        this.baseUrl = baseUrl;
+    constructor(baseUrl = null) {
+        // Better environment detection
+        this.isProduction = typeof window !== 'undefined' && 
+                           (window.location.hostname === 'www.becreativia.com' || 
+                            window.location.hostname === 'becreativia.com' ||
+                            window.location.hostname.includes('vercel.app'));
+        
+        this.baseUrl = baseUrl || (this.isProduction ? '/api' : 'http://localhost:8000');
+        this.bypassToken = null;
+        
+        // Load production config if needed
+        if (this.isProduction) {
+            this.loadProductionConfig();
+        }
+        
+        console.log('ApiService initialized with baseUrl:', this.baseUrl, '(isProduction:', this.isProduction + ')');
+    }
+    
+    async loadProductionConfig() {
+        try {
+            const { productionConfig } = await import('../config/production.js');
+            this.bypassToken = productionConfig.bypassToken;
+        } catch (error) {
+            console.warn('Could not load production config:', error);
+        }
+    }
+    
+    getHeaders() {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Only add bypass token in production
+        if (this.isProduction && this.bypassToken) {
+            headers['x-vercel-protection-bypass'] = this.bypassToken;
+        }
+        
+        return headers;
     }
 
     async analyzeInput(text) {
         try {
             const response = await fetch(`${this.baseUrl}/analyze-concept`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: this.getHeaders(),
                 body: JSON.stringify({ text })
             });
             
@@ -28,9 +62,7 @@ export class ApiService {
         try {
             const response = await fetch(`${this.baseUrl}/generate-concepts`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: this.getHeaders(),
                 body: JSON.stringify({ concept, cycles })
             });
             
@@ -48,8 +80,12 @@ export class ApiService {
 
     async addConceptToGraph(concept, parent = null) {
         try {
+            const headers = this.getHeaders();
+            delete headers['Content-Type']; // No need for JSON content type in GET-like request
+            
             const response = await fetch(`${this.baseUrl}/add-concept?concept=${encodeURIComponent(concept)}${parent ? `&parent=${encodeURIComponent(parent)}` : ''}`, {
-                method: 'POST'
+                method: 'POST',
+                headers: headers
             });
             
             if (!response.ok) {
@@ -65,8 +101,12 @@ export class ApiService {
 
     async resetGraphData() {
         try {
+            const headers = this.getHeaders();
+            delete headers['Content-Type']; // No need for JSON content type in DELETE request
+            
             const response = await fetch(`${this.baseUrl}/reset-graph`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: headers
             });
             
             if (!response.ok) {

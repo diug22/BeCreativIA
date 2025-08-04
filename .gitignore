@@ -8,3 +8,7 @@
 # Opcional: ignorar archivos de entorno con nombres personalizados
 *.env
 *.env.*
+.vercel
+
+# Configuración de producción (contiene tokens)
+js/config/production.js

@@ -7,7 +7,13 @@
       "Bash(ls:*)",
       "Bash(npm run dev:*)",
       "Bash(rm:*)",
-      "Bash(timeout 5 npm run dev)"
+      "Bash(timeout 5 npm run dev)",
+      "WebFetch(domain:www.becreativia.com)",
+      "Bash(vercel:*)",
+      "Bash(cp:*)",
+      "WebFetch(domain:becreativia-4qqu5cqtd-diug22s-projects.vercel.app)",
+      "Bash(curl:*)",
+      "WebFetch(domain:vercel.com)"
     ],
     "deny": []
   }

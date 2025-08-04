@@ -8,6 +8,26 @@ import { GrowthPhaseManager } from '../controllers/GrowthPhaseManager.js';
 import { SearchManager } from '../components/SearchManager.js';
 import { ContextMenu } from '../components/ContextMenu.js';
 
+// Video recording modules - loaded conditionally
+let VideoRecorder = null;
+let VideoModal = null;
+
+// Dynamic import for video recording (desacoplable)
+async function loadVideoModules() {
+    try {
+        const [recorderModule, modalModule] = await Promise.all([
+            import('../components/VideoRecorder.js'),
+            import('../components/VideoModal.js')
+        ]);
+        VideoRecorder = recorderModule.VideoRecorder;
+        VideoModal = modalModule.VideoModal;
+        return true;
+    } catch (error) {
+        console.warn('GraphRenderer: Video modules not available:', error);
+        return false;
+    }
+}
+
 export class GraphRenderer {
     constructor(containerId = 'container') {
         this.scene = new THREE.Scene();
@@ -48,6 +68,11 @@ export class GraphRenderer {
         // Node expansion components
         this.searchManager = null;
         this.contextMenu = null;
+        
+        // Video recording components (loaded conditionally)
+        this.videoRecorder = null;
+        this.videoModal = null;
+        this.videoModulesLoaded = false;
         
         this.containerId = containerId;
         this.init();
@@ -99,6 +124,113 @@ export class GraphRenderer {
         this.animate();
         
         console.log('GraphRenderer: Initialized with phase management components');
+        
+        // Initialize video button state (disabled by default)
+        this.updateVideoButtonState();
+        
+        // Try to load video modules (non-blocking)
+        this.initializeVideoModules();
+    }
+    
+    async initializeVideoModules() {
+        try {
+            // Check if video recording should be enabled
+            const shouldLoad = !window.location.search.includes('no-video') && 
+                             typeof MediaRecorder !== 'undefined';
+            
+            if (!shouldLoad) {
+                console.log('GraphRenderer: Video recording disabled or not supported');
+                return;
+            }
+            
+            const loaded = await loadVideoModules();
+            if (loaded && VideoRecorder && VideoModal) {
+                this.videoRecorder = new VideoRecorder(this.renderer, this.scene, this.camera);
+                this.videoModal = new VideoModal(this.videoRecorder);
+                this.videoModulesLoaded = true;
+                
+                console.log('GraphRenderer: Video recording modules loaded successfully');
+                
+                // Add global access for video functionality
+                window.openVideoModal = () => this.openVideoModal();
+                
+                // Update button state now that modules are loaded
+                this.updateVideoButtonState();
+                
+                // Track analytics
+                if (window.va) {
+                    window.va('track', 'Video Modules Loaded');
+                }
+            }
+        } catch (error) {
+            console.warn('GraphRenderer: Failed to load video modules:', error);
+        }
+    }
+    
+    openVideoModal() {
+        if (this.videoModal && Object.keys(this.nodes).length > 0) {
+            this.videoModal.show();
+        } else if (!this.videoModulesLoaded) {
+            console.warn('GraphRenderer: Video modules not loaded');
+            this.showVideoError('Módulos de video no disponibles');
+        } else {
+            console.warn('GraphRenderer: No nodes to record');
+            this.showVideoError('Necesitas crear un grafo antes de grabar un video');
+        }
+    }
+    
+    showVideoError(message) {
+        // Mostrar mensaje temporal al usuario
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(255, 68, 68, 0.9);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            z-index: 10000;
+            font-family: 'Inter', sans-serif;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(255, 68, 68, 0.2);
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span>⚠️</span>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(errorDiv);
+        
+        // Eliminar después de 3 segundos
+        setTimeout(() => {
+            if (errorDiv.parentElement) {
+                errorDiv.remove();
+            }
+        }, 3000);
+    }
+    
+    updateVideoButtonState() {
+        const videoBtn = document.getElementById('header-video');
+        if (!videoBtn) return;
+        
+        const hasNodes = Object.keys(this.nodes).length > 0;
+        const isLoaded = this.videoModulesLoaded;
+        
+        if (hasNodes && isLoaded) {
+            videoBtn.disabled = false;
+            videoBtn.style.opacity = '1';
+            videoBtn.style.cursor = 'pointer';
+            videoBtn.title = 'Crear video para redes sociales';
+        } else {
+            videoBtn.disabled = true;
+            videoBtn.style.opacity = '0.5';
+            videoBtn.style.cursor = 'not-allowed';
+            videoBtn.title = hasNodes ? 'Cargando módulos de video...' : 'Crea un grafo para grabar video';
+        }
     }
 
     setupLights() {
@@ -134,10 +266,10 @@ export class GraphRenderer {
     
     createVolumetricNebula() {
         // Create multiple layers of colorful nebula at different distances for depth
-        this.createNebulaLayer(120, 0.03, 800, 'distant');   // Purple/violet distant layer
-        this.createNebulaLayer(90, 0.05, 600, 'medium');     // Blue/cyan medium layer  
-        this.createNebulaLayer(65, 0.07, 500, 'close');      // Pink/magenta close layer
-        this.createNebulaLayer(45, 0.09, 400, 'inner');      // Orange/yellow inner layer
+        this.createNebulaLayer(120, 0.08, 800, 'distant');   // Purple/violet distant layer - increased opacity
+        this.createNebulaLayer(90, 0.12, 600, 'medium');     // Blue/cyan medium layer - increased opacity 
+        this.createNebulaLayer(65, 0.15, 500, 'close');      // Pink/magenta close layer - increased opacity
+        this.createNebulaLayer(45, 0.18, 400, 'inner');      // Orange/yellow inner layer - increased opacity
         
         // Initially hide all nebula layers
         this.hideNebula();
@@ -170,8 +302,8 @@ export class GraphRenderer {
             const y = r * Math.sin(phi) * Math.sin(theta);
             const z = r * Math.cos(phi);
             
-            // Create small sphere geometry for more nebula-like appearance
-            const particleSize = 0.3 + Math.random() * 0.8;
+            // Create small sphere geometry for more nebula-like appearance - increased size
+            const particleSize = 0.5 + Math.random() * 1.0;
             const sphereGeometry = new THREE.SphereGeometry(particleSize, 8, 6);
             
             // Color variation within the layer's scheme
@@ -182,9 +314,9 @@ export class GraphRenderer {
                 b: Math.max(0, Math.min(1, baseColor.b + (Math.random() - 0.5) * colorVariation))
             };
             
-            // Distance-based intensity
+            // Distance-based intensity - increased for more visibility
             const distanceFactor = 1 - (r - radius + 12) / 25;
-            const intensity = (0.3 + Math.random() * 0.4) * Math.max(0.4, distanceFactor);
+            const intensity = (0.6 + Math.random() * 0.6) * Math.max(0.6, distanceFactor);
             
             const material = new THREE.MeshBasicMaterial({
                 color: new THREE.Color(
@@ -193,7 +325,7 @@ export class GraphRenderer {
                     finalColor.b * intensity
                 ),
                 transparent: true,
-                opacity: opacity * (0.7 + Math.random() * 0.3),
+                opacity: opacity * (0.8 + Math.random() * 0.4),
                 blending: THREE.AdditiveBlending,
                 depthWrite: false
             });
@@ -383,6 +515,9 @@ export class GraphRenderer {
             this.animateNodeAppearance(nodeData);
         }
         
+        // Update video button state since we now have nodes
+        this.updateVideoButtonState();
+        
         return nodeData;
     }
 
@@ -568,6 +703,9 @@ export class GraphRenderer {
         if (this.contextMenu && this.contextMenu.isVisible) {
             this.contextMenu.hide();
         }
+        
+        // Update video button state since we no longer have nodes
+        this.updateVideoButtonState();
         
         console.log('GraphRenderer: Graph cleared successfully');
     }
