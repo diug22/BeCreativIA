@@ -1,0 +1,7 @@
+Queremos tener la posibilidad de que el usuario añada nodos a la red y se sigan creando mas correlaciones.
+Habran dos formas.
+1. En la barra del header del grafo, debera poner un placeholder que sea Buscar... y un input para iteracciones.
+    1.1 El usuario puede buscar un nodo si hay alguno similar o el mismo se selecciona.
+    1.2 Si no existe se crea ese nueve nodo, y se generan las iteraciones
+    1.3 La idea es crear otro mapa que puede que se una o no con alguno de los nodos que tenemos ya creados.
+2. La segunda es cuando seleccionas un nodo, salga un menu donde puedes añadir un nuevo nodo y las iteracciones que quieres a partir de dicho nodo.

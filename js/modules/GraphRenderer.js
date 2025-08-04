@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ConceptUtils } from '../utils/ConceptUtils.js';
+import { TunnelEffect } from '../effects/TunnelEffect.js';
+import { CameraController } from '../controllers/CameraController.js';
+import { ProgressBar } from '../components/ProgressBar.js';
+import { GrowthPhaseManager } from '../controllers/GrowthPhaseManager.js';
+import { SearchManager } from '../components/SearchManager.js';
+import { ContextMenu } from '../components/ContextMenu.js';
 
 export class GraphRenderer {
     constructor(containerId = 'container') {
@@ -11,7 +17,6 @@ export class GraphRenderer {
         this.nodes = new Map();
         this.edges = [];
         this.relationships = new Map();
-        
         
         // Labels visibility
         this.labelsVisible = true;
@@ -26,6 +31,18 @@ export class GraphRenderer {
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         
+        // Tunnel effect for transitions
+        this.tunnelEffect = null;
+        
+        // New phase management components
+        this.cameraController = null;
+        this.progressBar = null;
+        this.growthPhaseManager = null;
+        
+        // Node expansion components
+        this.searchManager = null;
+        this.contextMenu = null;
+        
         this.containerId = containerId;
         this.init();
     }
@@ -33,17 +50,22 @@ export class GraphRenderer {
     init() {
         // Setup renderer
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setClearColor(0x000000);
+        this.renderer.setClearColor(0x000000); // Black background
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        console.log('Renderer setup - size:', window.innerWidth, 'x', window.innerHeight);
         
         const container = document.getElementById(this.containerId);
         if (container) {
             container.appendChild(this.renderer.domElement);
+            console.log('Canvas added to container. Container size:', container.offsetWidth, 'x', container.offsetHeight);
+            console.log('Canvas size:', this.renderer.domElement.width, 'x', this.renderer.domElement.height);
+        } else {
+            console.error('Container not found:', this.containerId);
         }
         
         // Setup camera
-        this.camera.position.set(0, 0, 10);
+        this.camera.position.set(0, 0, 5);
         
         // Setup controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -55,11 +77,19 @@ export class GraphRenderer {
         // Setup lights
         this.setupLights();
         
-        // Event listeners
+        // Initialize tunnel effect
+        this.tunnelEffect = new TunnelEffect(this.scene, this.camera);
+        
+        // Initialize new phase management components
+        this.setupPhaseManagement();
+        
+        // Event listeners for node interaction
         this.setupEventListeners();
         
         // Start render loop
         this.animate();
+        
+        console.log('GraphRenderer: Initialized with phase management components');
     }
 
     setupLights() {
@@ -81,17 +111,20 @@ export class GraphRenderer {
         this.scene.add(pointLight);
     }
 
+
     setupEventListeners() {
         // Handle window resize
         window.addEventListener('resize', () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
+            
         });
         
-        // Mouse events
-        this.renderer.domElement.addEventListener('click', (event) => this.onMouseClick(event));
-        this.renderer.domElement.addEventListener('mousemove', (event) => this.onMouseMove(event));
+        // Mouse events for node interaction
+        this.renderer.domElement.addEventListener('click', (event) => this.onNodeClick(event));
+        this.renderer.domElement.addEventListener('mousemove', (event) => this.onNodeHover(event));
+        this.renderer.domElement.addEventListener('contextmenu', (event) => this.onNodeRightClick(event));
         
         // Keyboard events
         window.addEventListener('keydown', (event) => this.onKeyDown(event));
@@ -101,23 +134,74 @@ export class GraphRenderer {
         requestAnimationFrame(() => this.animate());
         this.controls.update();
         
-        // Rotate nodes slightly for visual appeal
-        this.nodes.forEach(nodeData => {
-            if (nodeData.sphere) {
-                nodeData.sphere.rotation.y += 0.01;
-                if (nodeData.glow) {
-                    nodeData.glow.rotation.y -= 0.005;
-                }
-                
-                // Animate selection rings
-                if (nodeData.selectionRing && nodeData.selectionRing.visible) {
-                    nodeData.selectionRing.rotation.z += 0.02;
-                    nodeData.selectionRing.lookAt(this.camera.position);
-                }
-            }
-        });
+        // Calculate delta time
+        const currentTime = Date.now();
+        const deltaTime = currentTime - (this.lastTime || currentTime);
+        this.lastTime = currentTime;
+        
         
         this.renderer.render(this.scene, this.camera);
+    }
+    
+    setupPhaseManagement() {
+        // Initialize camera controller
+        this.cameraController = new CameraController(this.camera, this.controls);
+        
+        // Initialize progress bar
+        this.progressBar = new ProgressBar();
+        
+        // Initialize growth phase manager
+        this.growthPhaseManager = new GrowthPhaseManager(this.cameraController, this.progressBar);
+        
+        // Set up event listeners for phase management
+        this.growthPhaseManager.onPhaseStarted((data) => {
+            console.log('GraphRenderer: Growth phase started', data);
+        });
+        
+        this.growthPhaseManager.onPhaseEnded((data) => {
+            console.log('GraphRenderer: Growth phase ended', data);
+        });
+        
+        this.growthPhaseManager.onNodeAddedToPhase((data) => {
+            console.log(`GraphRenderer: Node added to growth phase: ${data.concept}`);
+        });
+        
+        console.log('GraphRenderer: Phase management components initialized');
+        
+        // Initialize expansion components
+        this.setupExpansionComponents();
+    }
+    
+    setupExpansionComponents() {
+        // This will be initialized by ConceptGraphApp with apiService
+        console.log('GraphRenderer: Ready for expansion components initialization');
+    }
+    
+    initializeExpansionComponents(apiService) {
+        // Initialize search manager
+        this.searchManager = new SearchManager(this, apiService);
+        
+        // Initialize context menu
+        this.contextMenu = new ContextMenu(this, apiService);
+        
+        // Set up event listeners for expansion components
+        this.searchManager.onSearchStarted((data) => {
+            console.log('GraphRenderer: Search started', data);
+        });
+        
+        this.searchManager.onSearchCompleted((data) => {
+            console.log('GraphRenderer: Search completed', data);
+        });
+        
+        this.contextMenu.onExpansionStarted((data) => {
+            console.log('GraphRenderer: Node expansion started', data);
+        });
+        
+        this.contextMenu.onExpansionCompleted((data) => {
+            console.log('GraphRenderer: Node expansion completed', data);
+        });
+        
+        console.log('GraphRenderer: Expansion components initialized');
     }
     
     async createNode(concept, position = { x: 0, y: 0, z: 0 }, animated = true) {
@@ -167,6 +251,17 @@ export class GraphRenderer {
         
         const nodeData = { sphere, label, glow, position, hue };
         this.nodes.set(concept, nodeData);
+        
+        // Add loading node to tunnel if tunnel is active
+        if (this.tunnelEffect && this.tunnelEffect.isActive) {
+            const nodeColor = new THREE.Color().setHSL(hue, 0.8, 0.6).getHex();
+            this.tunnelEffect.addLoadingNode(concept, nodeColor);
+        }
+        
+        // Add node to growth phase if active
+        if (this.growthPhaseManager && this.growthPhaseManager.isPhaseActive()) {
+            this.growthPhaseManager.addNode(sphere, concept);
+        }
         
         // Animate appearance if requested
         if (animated) {
@@ -304,8 +399,25 @@ export class GraphRenderer {
     }
     
     clear() {
+        console.log('GraphRenderer: Clearing all graph data...');
+        
         // Clear selections first
         this.clearSelection();
+        
+        // Stop any active tunnel effect
+        if (this.tunnelEffect && this.tunnelEffect.isActive) {
+            this.tunnelEffect.stop();
+        }
+        
+        // Stop any active growth phase
+        if (this.growthPhaseManager && this.growthPhaseManager.isPhaseActive()) {
+            this.growthPhaseManager.forceEndPhase();
+        }
+        
+        // Hide progress bar
+        if (this.progressBar) {
+            this.progressBar.hide();
+        }
         
         // Remove all nodes
         this.nodes.forEach(node => {
@@ -331,6 +443,18 @@ export class GraphRenderer {
         this.isolationMode = false;
         this.hiddenNodes.clear();
         this.hiddenEdges.clear();
+        
+        // Reset camera to inactive mode
+        if (this.cameraController) {
+            this.cameraController.setMode('inactive');
+        }
+        
+        // Hide any open context menus
+        if (this.contextMenu && this.contextMenu.isVisible) {
+            this.contextMenu.hide();
+        }
+        
+        console.log('GraphRenderer: Graph cleared successfully');
     }
 
     positionNodes() {
@@ -490,8 +614,8 @@ export class GraphRenderer {
         });
     }
 
-    // Mouse and interaction methods
-    onMouseMove(event) {
+    // Mouse and interaction methods (separated for nodes only)
+    onNodeHover(event) {
         this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
@@ -506,22 +630,23 @@ export class GraphRenderer {
         
         // Reset all spheres
         spheres.forEach(sphere => {
-            sphere.material.opacity = 0.9;
-            sphere.scale.set(1, 1, 1);
+            if (!this.selectedNodes.has(sphere.userData.concept)) {
+                sphere.material.opacity = 0.9;
+                sphere.scale.set(1, 1, 1);
+            }
         });
         
         // Highlight hovered sphere
         if (intersects.length > 0) {
             const hoveredSphere = intersects[0].object;
-            hoveredSphere.material.opacity = 1.0;
-            hoveredSphere.scale.set(1.2, 1.2, 1.2);
-            document.body.style.cursor = 'pointer';
-        } else {
-            document.body.style.cursor = 'default';
+            if (!this.selectedNodes.has(hoveredSphere.userData.concept)) {
+                hoveredSphere.material.opacity = 1.0;
+                hoveredSphere.scale.set(1.2, 1.2, 1.2);
+            }
         }
     }
     
-    onMouseClick(event) {
+    onNodeClick(event) {
         this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
@@ -541,8 +666,11 @@ export class GraphRenderer {
             // Regular click for node selection
             this.selectNode(concept);
         } else {
-            // Click on empty space - clear selection
+            // Click on empty space - clear selection and hide context menu
             this.clearSelection();
+            if (this.contextMenu) {
+                this.contextMenu.hide();
+            }
         }
     }
 
@@ -551,6 +679,36 @@ export class GraphRenderer {
             if (this.isolationMode || this.selectedNodes.size > 0) {
                 this.clearSelection();
             }
+            // Also hide context menu
+            if (this.contextMenu) {
+                this.contextMenu.hide();
+            }
+        }
+    }
+    
+    onNodeRightClick(event) {
+        event.preventDefault();
+        
+        this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        
+        const spheres = [];
+        this.nodes.forEach(node => {
+            if (node.sphere && node.sphere.visible) spheres.push(node.sphere);
+        });
+        
+        const intersects = this.raycaster.intersectObjects(spheres);
+        
+        if (intersects.length > 0 && this.contextMenu) {
+            const clickedSphere = intersects[0].object;
+            const concept = clickedSphere.userData.concept;
+            
+            // Show context menu for the clicked node
+            this.contextMenu.show(concept, event.clientX, event.clientY);
+            
+            console.log(`GraphRenderer: Context menu shown for '${concept}'`);
         }
     }
 
@@ -784,22 +942,83 @@ export class GraphRenderer {
     }
 
     updateSelectionUI(customMessage = null) {
-        // Update UI to show current selection
-        const selectionInfo = document.getElementById('selectionInfo');
-        if (selectionInfo) {
-            if (customMessage) {
-                selectionInfo.textContent = customMessage;
-            } else if (this.selectedNodes.size === 0) {
-                selectionInfo.textContent = 'Ningún nodo seleccionado';
-            } else if (this.selectedNodes.size === 1) {
-                const selected = Array.from(this.selectedNodes)[0];
-                selectionInfo.textContent = `Seleccionado: ${selected}`;
-            } else if (this.selectedNodes.size === 2) {
-                const selectedArray = Array.from(this.selectedNodes);
-                selectionInfo.textContent = `Analizando relación: ${selectedArray[0]} ↔ ${selectedArray[1]}`;
-            }
+        // Selection info now handled by HTML UI
+        if (customMessage) {
+            console.log('Selection:', customMessage);
+        } else if (this.selectedNodes.size === 0) {
+            console.log('Selection: Ningún nodo seleccionado');
+        } else if (this.selectedNodes.size === 1) {
+            const selected = Array.from(this.selectedNodes)[0];
+            console.log(`Selection: ${selected}`);
+        } else if (this.selectedNodes.size === 2) {
+            const selectedArray = Array.from(this.selectedNodes);
+            console.log(`Selection: ${selectedArray[0]} ↔ ${selectedArray[1]}`);
         }
     }
+    
+    // UI state management methods
+    setGeneratingState(concept) {
+        console.log('Starting generation with concept-colored tunnel:', concept);
+        
+        // Start tunnel effect with concept colors
+        if (this.tunnelEffect) {
+            this.tunnelEffect.start();
+            
+            // Pre-seed tunnel with initial concept for consistent colors
+            if (concept) {
+                this.tunnelEffect.setInitialConcept(concept);
+            }
+        }
+        
+        // Set camera to tunnel mode
+        if (this.cameraController) {
+            this.cameraController.setMode('tunnel');
+        }
+        
+        // Force immediate render to show tunnel
+        this.renderer.render(this.scene, this.camera);
+    }
+    
+    clearGeneratingState() {
+        // Stop tunnel effect
+        if (this.tunnelEffect) {
+            this.tunnelEffect.stop();
+        }
+        
+        // Camera mode will be handled by growth phase or set to interactive
+        console.log('GraphRenderer: Cleared generating state');
+    }
+    
+    showProgress() {
+        // Progress now handled by tunnel effect
+    }
+    
+    hideProgress() {
+        // Progress now handled by tunnel effect  
+    }
+    
+    setProgress(percentage) {
+        // Update tunnel progress
+        if (this.tunnelEffect && this.tunnelEffect.isActive) {
+            this.tunnelEffect.setProgress(percentage);
+        }
+    }
+    
+    setProgressStatus(status) {
+        // Update tunnel status
+        if (this.tunnelEffect && this.tunnelEffect.isActive) {
+            this.tunnelEffect.setStatus(status);
+        }
+    }
+    
+    addProgressConcept(concept) {
+        // Concepts tracked by tunnel effect
+    }
+    
+    completeProgress() {
+        // Progress completion handled by tunnel effect
+    }
+    
 
     highlightPath(path) {
         if (!path || path.length === 0) return;
@@ -812,15 +1031,12 @@ export class GraphRenderer {
             if (index === 0) {
                 // Start node - green
                 nodeData.sphere.material.emissive.setHex(0x004400);
-                this.addPathLabel(nodeData, 'INICIO', '#00ff00');
             } else if (index === path.length - 1) {
                 // End node - red
                 nodeData.sphere.material.emissive.setHex(0x440000);
-                this.addPathLabel(nodeData, 'FIN', '#ff0000');
             } else {
                 // Intermediate nodes - blue
                 nodeData.sphere.material.emissive.setHex(0x000044);
-                this.addPathLabel(nodeData, `PASO ${index}`, '#0088ff');
             }
 
             // Make intermediate nodes slightly larger
@@ -943,5 +1159,68 @@ export class GraphRenderer {
         }
         
         return pathEdges;
+    }
+    
+    // Growth Phase Management Methods
+    startGrowthPhase(initialNode, expectedTotalNodes) {
+        if (this.growthPhaseManager) {
+            this.growthPhaseManager.startPhase(initialNode, expectedTotalNodes);
+        }
+    }
+    
+    updateGrowthPhaseProgress(nodeCount) {
+        if (this.growthPhaseManager && this.growthPhaseManager.isPhaseActive()) {
+            this.growthPhaseManager.updateExpectedNodes(nodeCount);
+        }
+    }
+    
+    endGrowthPhase() {
+        if (this.growthPhaseManager && this.growthPhaseManager.isPhaseActive()) {
+            this.growthPhaseManager.endPhase();
+        }
+    }
+    
+    isGrowthPhaseActive() {
+        return this.growthPhaseManager ? this.growthPhaseManager.isPhaseActive() : false;
+    }
+    
+    // Camera Management Methods
+    setCameraMode(mode, options = {}) {
+        if (this.cameraController) {
+            this.cameraController.setMode(mode, options);
+        }
+    }
+    
+    getCameraMode() {
+        return this.cameraController ? this.cameraController.getCurrentMode() : 'inactive';
+    }
+    
+    // Cleanup
+    destroy() {
+        // Destroy phase management components
+        if (this.growthPhaseManager) {
+            this.growthPhaseManager.destroy();
+            this.growthPhaseManager = null;
+        }
+        
+        if (this.cameraController) {
+            this.cameraController.destroy();
+            this.cameraController = null;
+        }
+        
+        if (this.progressBar) {
+            this.progressBar.destroy();
+            this.progressBar = null;
+        }
+        
+        if (this.tunnelEffect) {
+            this.tunnelEffect.cleanup();
+            this.tunnelEffect = null;
+        }
+        
+        // Clear graph
+        this.clear();
+        
+        console.log('GraphRenderer: Destroyed');
     }
 }

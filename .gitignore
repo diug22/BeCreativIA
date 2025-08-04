@@ -1,0 +1,10 @@
+# Ignorar archivos de entorno
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Opcional: ignorar archivos de entorno con nombres personalizados
+*.env
+*.env.*

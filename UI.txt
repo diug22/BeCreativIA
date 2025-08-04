@@ -1,0 +1,6 @@
+Componentes que deberiamos tener.
+Una pantalla principal 2d con el texto, un input para el concepto, otro para las iteracciones, texto de enter.
+Una animacion tunel de rayos que se para cuando se genera el primer nodo.
+El grafo con todos los nodos que se va generando poco a poco.
+Un header arriba con el nombre de la web, un boton para volver al inicio, un boton para quitar las labels y un input text.
+Seguramente no usemos nada de 3D.

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Space Tunnel Loading - Calm Orbital Travel</title>
+  <style>
+    body, html {margin:0; padding:0; overflow:hidden; background: radial-gradient(circle at center, #0f111e 0%, #000714 90%); font-family: system-ui,-apple-system,BlinkMacSystemFont,sans-serif; color:#eef4fb;}
+    #overlay {position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; z-index:10;}
+    #loadingText {font-size:1.9rem; letter-spacing:1px; margin-bottom:6px; text-align:center; text-shadow:0 0 10px rgba(238,244,251,0.6); transition:transform .2s ease;}
+    #barContainer {width:280px; height:6px; background:rgba(238,244,251,0.08); border-radius:3px; overflow:hidden;}
+    #bar {width:0%; height:100%; background:linear-gradient(90deg,#a8cfe5,#e8f3ff); border-radius:3px; transition:width .3s ease;}
+    #content {position:absolute; inset:0; display:none; align-items:center; justify-content:center; font-size:2.8rem; z-index:5;}
+    canvas {display:block;}
+  </style>
+</head>
+<body>
+  <div id="overlay">
+    <div id="loadingText">Cargando... 0%</div>
+    <div id="barContainer"><div id="bar"></div></div>
+  </div>
+  <div id="content">🚀 ¡Listo! Contenido principal aquí.</div>
+  <canvas id="c"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
+  <script>
+    // === Setup básico ===
+    const canvas = document.getElementById('c');
+    const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x000714, 0.0022);
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 3);
+    window.addEventListener('resize', ()=>{renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();});
+
+    // === Anillos suaves alrededor de la cámara ===
+    const RING_COUNT = 6;
+    const SEGMENTS = 100;
+    const rings = [];
+    const colorPalette = [0xa8cfe5, 0xc0dff6, 0xe8f3ff];
+    const sphereGeom = new THREE.SphereGeometry(0.045, 12, 12);
+    for (let r=0;r<RING_COUNT;r++){
+      const group = new THREE.Group();
+      const radius = 1 + r * 0.7;
+      const baseSpeed = 0.08 + r * 0.015; // más lento y suave
+      for (let i=0;i<SEGMENTS;i++){
+        const angle = (i/SEGMENTS)*Math.PI*2;
+        const colorValue = colorPalette[i % colorPalette.length];
+        const mat = new THREE.MeshStandardMaterial({color: colorValue, roughness:0.5, metalness:0.1});
+        const sphere = new THREE.Mesh(sphereGeom, mat);
+        sphere.position.set(Math.cos(angle)*radius, Math.sin(angle)*radius, -r * 4 - 4);
+        group.add(sphere);
+      }
+      group.userData = {radius, speed: baseSpeed, offsetZ: -r * 4 - 4};
+      scene.add(group);
+      rings.push(group);
+    }
+
+    // iluminación más suave
+    scene.add(new THREE.AmbientLight(0xffffff,0.45));
+    const dir = new THREE.DirectionalLight(0xffffff,0.25);
+    dir.position.set(2,3,4);
+    scene.add(dir);
+
+    // === UI carga ===
+    const loadingText = document.getElementById('loadingText');
+    const bar = document.getElementById('bar');
+    const content = document.getElementById('content');
+    let progress=0; let finishing=false;
+
+    // animación
+    let last = performance.now();
+    function animate(now){
+      requestAnimationFrame(animate);
+      const delta = (now - last)/1000; last = now;
+
+      rings.forEach((group)=>{
+        const {radius} = group.userData;
+        // rotación muy suave
+        group.rotation.z += group.userData.speed * delta * 0.5;
+        // desplazamiento lento hacia adelante
+        group.userData.offsetZ += delta * 1.5; // más calmado
+        if (group.userData.offsetZ > 1){
+          group.userData.offsetZ = - (RING_COUNT*4 + 4);
+        }
+        group.children.forEach(sphere=>{
+          const ang = Math.atan2(sphere.position.y, sphere.position.x) + group.rotation.z;
+          const x = Math.cos(ang)*radius;
+          const y = Math.sin(ang)*radius;
+          sphere.position.set(x, y, group.userData.offsetZ);
+        });
+      });
+
+      // simular progreso más pausado
+      if (!finishing){
+        progress += delta * 10; // carga más lenta
+        if (progress >= 100){progress=100; beginFinish();}
+      }
+      const display = Math.floor(progress);
+      loadingText.textContent = `Cargando... ${display}%`;
+      bar.style.width = display + '%';
+      loadingText.style.transform = (display % 10 === 0) ? 'scale(1.02)' : 'scale(1)';
+
+      renderer.render(scene,camera);
+    }
+    requestAnimationFrame(animate);
+
+    function beginFinish(){
+      finishing=true;
+      const start = performance.now();
+      const duration=1200;
+      function step(now){
+        const t=Math.min(1,(now-start)/duration);
+        // desacelerar rotaciones suavemente
+        rings.forEach(g=>{ g.userData.speed *= (1 - t*0.7); });
+        if (t>=1){
+          document.getElementById('overlay').style.transition='opacity .6s ease';
+          document.getElementById('overlay').style.opacity='0';
+          setTimeout(()=>{content.style.display='flex'; content.style.opacity=0; content.style.transition='opacity .5s ease'; content.style.opacity=1;},250);
+        } else requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+  </script>
+</body>
+</html>
