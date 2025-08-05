@@ -13,7 +13,8 @@
       "Bash(cp:*)",
       "WebFetch(domain:becreativia-4qqu5cqtd-diug22s-projects.vercel.app)",
       "Bash(curl:*)",
-      "WebFetch(domain:vercel.com)"
+      "WebFetch(domain:vercel.com)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

@@ -348,22 +348,50 @@ export class GraphRenderer {
     }
 
     setupLights() {
-        // Ambient light
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+        // Enhanced ambient light for better base illumination
+        const ambientLight = new THREE.AmbientLight(0x202040, 0.6);
         this.scene.add(ambientLight);
         
-        // Main directional light
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(10, 10, 5);
+        // Main dramatic directional light
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        directionalLight.position.set(10, 15, 8);
         directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 2048;
-        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.mapSize.width = 4096;
+        directionalLight.shadow.mapSize.height = 4096;
+        directionalLight.shadow.camera.near = 0.1;
+        directionalLight.shadow.camera.far = 100;
+        directionalLight.shadow.camera.left = -50;
+        directionalLight.shadow.camera.right = 50;
+        directionalLight.shadow.camera.top = 50;
+        directionalLight.shadow.camera.bottom = -50;
+        directionalLight.shadow.bias = -0.0001;
         this.scene.add(directionalLight);
         
-        // Additional point light for better visibility
-        const pointLight = new THREE.PointLight(0x00aaff, 0.3, 100);
-        pointLight.position.set(-10, -10, 10);
-        this.scene.add(pointLight);
+        // Primary accent light (blue)
+        const accentLight1 = new THREE.PointLight(0x00aaff, 1.5, 200);
+        accentLight1.position.set(-15, 10, 15);
+        this.scene.add(accentLight1);
+        
+        // Secondary accent light (warmer)
+        const accentLight2 = new THREE.PointLight(0x4080ff, 1.0, 150);
+        accentLight2.position.set(15, -5, 10);
+        this.scene.add(accentLight2);
+        
+        // Rim light for depth
+        const rimLight = new THREE.DirectionalLight(0x8888ff, 0.8);
+        rimLight.position.set(-10, -10, -10);
+        this.scene.add(rimLight);
+        
+        // Store references for potential animation
+        this.lights = {
+            ambient: ambientLight,
+            directional: directionalLight,
+            accent1: accentLight1,
+            accent2: accentLight2,
+            rim: rimLight
+        };
+        
+        console.log('GraphRenderer: Enhanced dramatic lighting setup complete');
     }
 
     setupBackground() {
@@ -521,10 +549,87 @@ export class GraphRenderer {
         const deltaTime = currentTime - (this.lastTime || currentTime);
         this.lastTime = currentTime;
         
+        // Enhanced visual effects
+        this.updateVisualEffects(currentTime, deltaTime);
+        
         // Animate background nebula
         this.animateNebula();
         
         this.renderer.render(this.scene, this.camera);
+    }
+    
+    updateVisualEffects(currentTime, deltaTime) {
+        const time = currentTime * 0.001; // Convert to seconds
+        
+        // Animate node effects
+        this.nodes.forEach((nodeData, concept) => {
+            if (nodeData.sphere && nodeData.sphere.material) {
+                // Subtle breathing effect on nodes
+                const breathe = Math.sin(time * 1.2 + nodeData.hue * 10) * 0.05 + 0.95;
+                nodeData.sphere.scale.setScalar(breathe);
+                
+                // Dynamic emissive intensity
+                const emissivePulse = Math.sin(time * 2 + nodeData.hue * 15) * 0.1 + 0.2;
+                nodeData.sphere.material.emissiveIntensity = emissivePulse;
+                
+                // Animate glow layers
+                if (nodeData.innerGlow) {
+                    const innerPulse = Math.sin(time * 1.8 + nodeData.hue * 12) * 0.2 + 0.6;
+                    nodeData.innerGlow.material.opacity = innerPulse;
+                    nodeData.innerGlow.scale.setScalar(breathe * 1.1);
+                }
+                
+                if (nodeData.outerGlow) {
+                    const outerPulse = Math.sin(time * 1.4 + nodeData.hue * 8) * 0.15 + 0.3;
+                    nodeData.outerGlow.material.opacity = outerPulse;
+                    nodeData.outerGlow.scale.setScalar(breathe * 1.2);
+                }
+            }
+        });
+        
+        // Animate edge particles
+        this.edges.forEach(edgeData => {
+            if (edgeData.line && edgeData.line.children) {
+                edgeData.line.children.forEach(child => {
+                    if (child.userData && child.userData.curve) {
+                        // Move particles along the curve
+                        child.userData.progress += child.userData.speed * deltaTime * 0.001;
+                        if (child.userData.progress > 1) {
+                            child.userData.progress = 0; // Loop back to start
+                        }
+                        
+                        const position = child.userData.curve.getPoint(child.userData.progress);
+                        child.position.copy(position);
+                        
+                        // Fade particles in/out along the curve
+                        const fadeDistance = 0.1;
+                        let opacity = child.userData.originalOpacity;
+                        
+                        if (child.userData.progress < fadeDistance) {
+                            opacity *= child.userData.progress / fadeDistance;
+                        } else if (child.userData.progress > 1 - fadeDistance) {
+                            opacity *= (1 - child.userData.progress) / fadeDistance;
+                        }
+                        
+                        child.material.opacity = opacity;
+                    }
+                });
+            }
+        });
+        
+        // Animate lighting for dynamic atmosphere
+        if (this.lights) {
+            // Subtle light movement
+            if (this.lights.accent1) {
+                this.lights.accent1.intensity = 1.5 + Math.sin(time * 0.7) * 0.3;
+                this.lights.accent1.position.x = -15 + Math.sin(time * 0.5) * 2;
+            }
+            
+            if (this.lights.accent2) {
+                this.lights.accent2.intensity = 1.0 + Math.cos(time * 0.9) * 0.2;
+                this.lights.accent2.position.z = 10 + Math.cos(time * 0.3) * 3;
+            }
+        }
     }
     
     setupPhaseManagement() {
@@ -595,29 +700,53 @@ export class GraphRenderer {
         }
         
         const hue = ConceptUtils.getConceptHue(concept);
+        const baseColor = new THREE.Color().setHSL(hue, 0.9, 0.7);
+        const accentColor = new THREE.Color().setHSL(hue, 1.0, 0.9);
         
-        // Create sphere geometry with higher quality
-        const geometry = new THREE.SphereGeometry(0.4, 32, 32);
-        const material = new THREE.MeshPhongMaterial({ 
-            color: new THREE.Color().setHSL(hue, 0.8, 0.6),
-            shininess: 100,
+        // Create enhanced sphere geometry with high quality
+        const geometry = new THREE.SphereGeometry(0.5, 64, 64);
+        const material = new THREE.MeshPhysicalMaterial({ 
+            color: baseColor,
+            metalness: 0.3,
+            roughness: 0.1,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1,
+            transmission: 0.1,
+            thickness: 0.5,
+            emissive: accentColor,
+            emissiveIntensity: 0.2,
             transparent: true,
-            opacity: animated ? 0 : 0.9
+            opacity: animated ? 0 : 0.95
         });
         const sphere = new THREE.Mesh(geometry, material);
         sphere.position.set(position.x, position.y, position.z);
         sphere.castShadow = true;
         sphere.receiveShadow = true;
         
-        // Add glow effect
-        const glowGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-        const glowMaterial = new THREE.MeshBasicMaterial({
-            color: new THREE.Color().setHSL(hue, 0.8, 0.8),
+        // Enhanced multi-layer glow system
+        // Inner glow - bright and intense
+        const innerGlowGeometry = new THREE.SphereGeometry(0.65, 32, 32);
+        const innerGlowMaterial = new THREE.MeshBasicMaterial({
+            color: accentColor,
             transparent: true,
-            opacity: animated ? 0 : 0.3
+            opacity: animated ? 0 : 0.6,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
         });
-        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-        glow.position.copy(sphere.position);
+        const innerGlow = new THREE.Mesh(innerGlowGeometry, innerGlowMaterial);
+        innerGlow.position.copy(sphere.position);
+        
+        // Outer glow - softer and larger
+        const outerGlowGeometry = new THREE.SphereGeometry(0.9, 24, 24);
+        const outerGlowMaterial = new THREE.MeshBasicMaterial({
+            color: baseColor,
+            transparent: true,
+            opacity: animated ? 0 : 0.3,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const outerGlow = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
+        outerGlow.position.copy(sphere.position);
         
         // Create text label with improved styling
         const label = this.createTextLabel(concept, hue);
@@ -631,10 +760,11 @@ export class GraphRenderer {
         sphere.userData = { concept, type: 'node' };
         
         this.scene.add(sphere);
-        this.scene.add(glow);
+        this.scene.add(innerGlow);
+        this.scene.add(outerGlow);
         this.scene.add(label);
         
-        const nodeData = { sphere, label, glow, position, hue };
+        const nodeData = { sphere, label, innerGlow, outerGlow, position, hue };
         this.nodes.set(concept, nodeData);
         
         // Add loading node to tunnel if tunnel is active
@@ -711,15 +841,17 @@ export class GraphRenderer {
             // Ease-out animation
             const easeProgress = 1 - Math.pow(1 - progress, 3);
             
-            // Animate opacity
-            nodeData.sphere.material.opacity = easeProgress * 0.9;
-            nodeData.glow.material.opacity = easeProgress * 0.3;
+            // Animate opacity with enhanced glow layers
+            nodeData.sphere.material.opacity = easeProgress * 0.95;
+            if (nodeData.innerGlow) nodeData.innerGlow.material.opacity = easeProgress * 0.6;
+            if (nodeData.outerGlow) nodeData.outerGlow.material.opacity = easeProgress * 0.3;
             nodeData.label.material.opacity = easeProgress;
             
-            // Animate scale
+            // Animate scale with staggered glow effect
             const scale = easeProgress;
             nodeData.sphere.scale.set(scale, scale, scale);
-            nodeData.glow.scale.set(scale, scale, scale);
+            if (nodeData.innerGlow) nodeData.innerGlow.scale.set(scale * 1.1, scale * 1.1, scale * 1.1);
+            if (nodeData.outerGlow) nodeData.outerGlow.scale.set(scale * 1.2, scale * 1.2, scale * 1.2);
             
             if (progress < 1) {
                 requestAnimationFrame(animate);
@@ -735,33 +867,69 @@ export class GraphRenderer {
         
         if (!fromNode || !toNode) return;
         
-        // Create curved line for better visualization
+        // Create enhanced curved connection with multiple control points
         const start = new THREE.Vector3(fromNode.position.x, fromNode.position.y, fromNode.position.z);
         const end = new THREE.Vector3(toNode.position.x, toNode.position.y, toNode.position.z);
-        const middle = new THREE.Vector3().lerpVectors(start, end, 0.5);
-        middle.y += Math.random() * 2 - 1; // Random arc height
+        const distance = start.distanceTo(end);
         
-        const curve = new THREE.QuadraticBezierCurve3(start, middle, end);
-        const points = curve.getPoints(50);
+        // Create more organic curve with multiple control points
+        const midPoint = new THREE.Vector3().lerpVectors(start, end, 0.5);
+        const arcHeight = (Math.random() - 0.5) * Math.min(distance * 0.3, 3);
+        const arcDirection = new THREE.Vector3(
+            (Math.random() - 0.5) * 2,
+            arcHeight,
+            (Math.random() - 0.5) * 2
+        ).normalize().multiplyScalar(Math.abs(arcHeight));
+        midPoint.add(arcDirection);
         
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const curve = new THREE.QuadraticBezierCurve3(start, midPoint, end);
+        const points = curve.getPoints(100); // Higher resolution for smoother curves
         
         // Create gradient color based on parent-child relationship
         const parentHue = fromNode.hue;
         const childHue = toNode.hue;
         const averageHue = (parentHue + childHue) / 2;
+        const edgeColor = new THREE.Color().setHSL(averageHue, 0.9, 0.8);
         
-        const material = new THREE.LineBasicMaterial({ 
-            color: new THREE.Color().setHSL(averageHue, 0.8, 0.7),
-            linewidth: 2,
+        // Enhanced line with glow effect
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        
+        // Main line
+        const mainMaterial = new THREE.LineBasicMaterial({ 
+            color: edgeColor,
             transparent: true,
-            opacity: animated ? 0 : 0.8
+            opacity: animated ? 0 : 0.9,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
         });
+        const mainLine = new THREE.Line(geometry, mainMaterial);
         
-        const line = new THREE.Line(geometry, material);
+        // Glow line (wider and softer)
+        const glowMaterial = new THREE.LineBasicMaterial({
+            color: edgeColor,
+            transparent: true,
+            opacity: animated ? 0 : 0.4,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const glowLine = new THREE.Line(geometry.clone(), glowMaterial);
         
-        this.scene.add(line);
-        this.edges.push({ line, from: fromConcept, to: toConcept });
+        // Create edge group for better management
+        const edgeGroup = new THREE.Group();
+        edgeGroup.add(glowLine);
+        edgeGroup.add(mainLine);
+        
+        // Add subtle animated particles along the edge
+        this.addEdgeParticles(edgeGroup, curve, edgeColor, animated);
+        
+        this.scene.add(edgeGroup);
+        this.edges.push({ 
+            line: edgeGroup, 
+            mainLine, 
+            glowLine,
+            from: fromConcept, 
+            to: toConcept 
+        });
         
         // Store relationship for duplicate detection
         if (!this.relationships.has(fromConcept)) {
@@ -771,19 +939,62 @@ export class GraphRenderer {
         
         // Animate edge appearance
         if (animated) {
-            this.animateEdgeAppearance(material);
+            this.animateEdgeAppearance(edgeGroup, mainMaterial, glowMaterial);
+        }
+    }
+    
+    addEdgeParticles(edgeGroup, curve, color, animated) {
+        // Create subtle flowing particles along the edge
+        const particleCount = 3;
+        const particleGeometry = new THREE.SphereGeometry(0.02, 8, 8);
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particleMaterial = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: animated ? 0 : 0.6,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            
+            const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+            
+            // Random starting position along the curve
+            const t = Math.random();
+            const position = curve.getPoint(t);
+            particle.position.copy(position);
+            
+            // Store animation data
+            particle.userData = {
+                curve: curve,
+                progress: t,
+                speed: 0.2 + Math.random() * 0.3,
+                originalOpacity: 0.6
+            };
+            
+            edgeGroup.add(particle);
         }
     }
 
-    animateEdgeAppearance(material) {
-        const duration = 800;
+    animateEdgeAppearance(edgeGroup, mainMaterial, glowMaterial) {
+        const duration = 1200;
         const startTime = Date.now();
         
         const animate = () => {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / duration, 1);
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
             
-            material.opacity = progress * 0.8;
+            // Animate main line and glow
+            mainMaterial.opacity = easeProgress * 0.9;
+            glowMaterial.opacity = easeProgress * 0.4;
+            
+            // Animate particles
+            edgeGroup.children.forEach(child => {
+                if (child.userData && child.userData.originalOpacity !== undefined) {
+                    child.material.opacity = easeProgress * child.userData.originalOpacity;
+                }
+            });
             
             if (progress < 1) {
                 requestAnimationFrame(animate);
@@ -801,7 +1012,7 @@ export class GraphRenderer {
         
         // Stop any active tunnel effect
         if (this.tunnelEffect && this.tunnelEffect.isActive) {
-            this.tunnelEffect.stop();
+            this.tunnelEffect.stopTunnel(); // Only stop tunnel, keep loading UI
         }
         
         // Stop any active growth phase
@@ -818,15 +1029,25 @@ export class GraphRenderer {
         this.nodes.forEach(node => {
             this.scene.remove(node.sphere);
             this.scene.remove(node.label);
-            if (node.glow) this.scene.remove(node.glow);
+            if (node.innerGlow) this.scene.remove(node.innerGlow);
+            if (node.outerGlow) this.scene.remove(node.outerGlow);
             if (node.selectionRing) this.scene.remove(node.selectionRing);
             if (node.pathLabel) this.scene.remove(node.pathLabel);
         });
         this.nodes.clear();
         
-        // Remove all edges
+        // Remove all edges properly
         this.edges.forEach(edgeData => {
-            if (edgeData.line) this.scene.remove(edgeData.line);
+            if (edgeData.line) {
+                this.scene.remove(edgeData.line);
+                // Dispose of geometry and material to prevent memory leaks
+                if (edgeData.line.geometry) {
+                    edgeData.line.geometry.dispose();
+                }
+                if (edgeData.line.material) {
+                    edgeData.line.material.dispose();
+                }
+            }
         });
         this.edges = [];
         
@@ -983,8 +1204,11 @@ export class GraphRenderer {
             };
             
             nodeData.sphere.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
-            if (nodeData.glow) {
-                nodeData.glow.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
+            if (nodeData.innerGlow) {
+                nodeData.innerGlow.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
+            }
+            if (nodeData.outerGlow) {
+                nodeData.outerGlow.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
             }
             nodeData.label.position.set(currentPosition.x, currentPosition.y + 0.8, currentPosition.z);
             nodeData.position = currentPosition;
@@ -998,9 +1222,18 @@ export class GraphRenderer {
     }
     
     updateEdges() {
-        // Remove old edges
+        // Remove old edges properly
         this.edges.forEach(edgeData => {
-            if (edgeData.line) this.scene.remove(edgeData.line);
+            if (edgeData.line) {
+                this.scene.remove(edgeData.line);
+                // Dispose of geometry and material to prevent memory leaks
+                if (edgeData.line.geometry) {
+                    edgeData.line.geometry.dispose();
+                }
+                if (edgeData.line.material) {
+                    edgeData.line.material.dispose();
+                }
+            }
         });
         this.edges = [];
         
@@ -1010,6 +1243,8 @@ export class GraphRenderer {
                 this.createEdge(source, target, false);
             });
         });
+        
+        console.log('GraphRenderer: Edges updated after node repositioning');
     }
 
     // Mouse and interaction methods (separated for nodes only)
@@ -1355,7 +1590,8 @@ export class GraphRenderer {
         if (nodeData) {
             nodeData.sphere.visible = false;
             nodeData.label.visible = false;
-            if (nodeData.glow) nodeData.glow.visible = false;
+            if (nodeData.innerGlow) nodeData.innerGlow.visible = false;
+            if (nodeData.outerGlow) nodeData.outerGlow.visible = false;
             this.hiddenNodes.add(concept);
         }
     }
@@ -1365,7 +1601,8 @@ export class GraphRenderer {
         if (nodeData) {
             nodeData.sphere.visible = true;
             nodeData.label.visible = this.labelsVisible;
-            if (nodeData.glow) nodeData.glow.visible = true;
+            if (nodeData.innerGlow) nodeData.innerGlow.visible = true;
+            if (nodeData.outerGlow) nodeData.outerGlow.visible = true;
         }
     }
 
@@ -1433,13 +1670,14 @@ export class GraphRenderer {
     }
     
     clearGeneratingState() {
-        // Stop tunnel effect
+        // Complete tunnel effect gracefully - call complete regardless of tunnel state
+        // because loading UI should be hidden when graph generation is done
         if (this.tunnelEffect) {
-            this.tunnelEffect.stop();
+            this.tunnelEffect.complete();
         }
         
         // Camera mode will be handled by growth phase or set to interactive
-        console.log('GraphRenderer: Cleared generating state');
+        console.log('GraphRenderer: Cleared generating state - tunnel completing');
     }
     
     showProgress() {

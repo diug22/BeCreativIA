@@ -47,6 +47,12 @@ export class SearchManager {
         if (!this.searchInput) {
             console.error('SearchManager: Search input not found - element with ID "header-search-input" does not exist');
             console.log('SearchManager: Available inputs:', document.querySelectorAll('input'));
+            
+            // Retry binding after a short delay (DOM might not be ready)
+            setTimeout(() => {
+                console.log('SearchManager: Retrying element binding...');
+                this.bindElements();
+            }, 1000);
             return;
         }
         
@@ -60,7 +66,16 @@ export class SearchManager {
         this.searchInput.disabled = false;
         this.searchInput.style.pointerEvents = 'all';
         
+        // Set up event listeners
+        this.setupEventListeners();
+        
         console.log('SearchManager: Elements bound successfully');
+    }
+    
+    // Add method to re-bind if needed
+    rebindElements() {
+        console.log('SearchManager: Re-binding elements...');
+        this.bindElements();
     }
     
     createSuggestions() {

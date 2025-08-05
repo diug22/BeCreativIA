@@ -29,6 +29,80 @@ export class ConceptGraphApp {
         window.clearSelection = () => this.clearSelection();
         
         // Background functions removed - only nebula remains
+        
+        // Check if we should show header (existing graph data)
+        this.checkAndShowHeader();
+    }
+    
+    /**
+     * Check if there's existing graph data and show header if needed
+     */
+    async checkAndShowHeader() {
+        try {
+            // Check if there's existing graph data
+            const response = await this.apiService.getGraph();
+            
+            if (response && response.nodes && response.nodes.length > 0) {
+                // There's existing data, show the header and container
+                this.showHeaderAndContainer();
+                
+                // Hide initial screen
+                const initialScreen = document.getElementById('initial-screen');
+                if (initialScreen) {
+                    initialScreen.classList.add('hidden');
+                }
+                
+                // Show Three.js container
+                const container = document.getElementById('container');
+                if (container) {
+                    container.classList.add('visible');
+                    container.style.opacity = '1';
+                }
+                
+                console.log('ConceptGraphApp: Existing graph detected, header shown');
+            }
+        } catch (error) {
+            // No existing data or error - stay on initial screen
+            console.log('ConceptGraphApp: No existing graph data, staying on initial screen');
+        }
+    }
+    
+    /**
+     * Show header and update concept title
+     */
+    showHeaderAndContainer(concept = null) {
+        // Show header
+        if (this.headerEl) {
+            this.headerEl.classList.remove('hidden');
+            console.log('ConceptGraphApp: Header made visible');
+            
+            // Re-bind SearchManager after header is shown
+            setTimeout(() => {
+                if (this.renderer && this.renderer.searchManager) {
+                    console.log('ConceptGraphApp: Re-binding SearchManager after header show');
+                    this.renderer.searchManager.rebindElements();
+                }
+            }, 100);
+        }
+        
+        // Update concept title if provided or get from existing data
+        if (concept && window.updateConceptTitle) {
+            window.updateConceptTitle(concept);
+        } else if (window.updateConceptTitle) {
+            // Try to get concept from existing data
+            this.apiService.getGraph().then(response => {
+                if (response && response.nodes && response.nodes.length > 0) {
+                    // Find the root node or first node as concept
+                    const rootNode = response.nodes.find(node => node.id === 'root') || response.nodes[0];
+                    if (rootNode) {
+                        window.updateConceptTitle(rootNode.name);
+                    }
+                }
+            }).catch(() => {
+                // Fallback
+                window.updateConceptTitle('Concepto');
+            });
+        }
     }
     /**
      * Initialize expansion components (SearchManager and ContextMenu)
@@ -130,13 +204,8 @@ export class ConceptGraphApp {
         } else {
             console.error('Container not found!');
         }
-        // Show static HTML header
-        if (this.headerEl) this.headerEl.classList.remove('hidden');
-        
-        // Update concept title in header
-        if (window.updateConceptTitle) {
-            window.updateConceptTitle(concept);
-        }
+        // Show header and update concept title
+        this.showHeaderAndContainer(concept);
         
         // Start tunnel effect
         this.renderer.setGeneratingState(concept);
@@ -199,9 +268,6 @@ export class ConceptGraphApp {
         // Step 2: Clear existing graph and prepare for generation
         this.renderer.clear();
         await this.apiService.resetGraphData();
-        
-        // Tunnel effect is already active, will stop on first node
-        this.renderer.clearGeneratingState();
 
         // Step 3: Begin concept generation
         let currentConcepts = [initialConcept];
@@ -297,6 +363,12 @@ export class ConceptGraphApp {
         setTimeout(() => {
             this.renderer.positionNodes();
         }, 1500);
+        
+        // Step 6: Complete the tunnel effect after all generation is done
+        console.log('Generación completada - finalizando efectos visuales...');
+        setTimeout(() => {
+            this.renderer.clearGeneratingState();
+        }, 2000); // Give time for positioning to start
         
         console.log('Generación completada');
         

@@ -12,3 +12,5 @@
 
 # Configuración de producción (contiene tokens)
 js/config/production.js
+
+.vercel
