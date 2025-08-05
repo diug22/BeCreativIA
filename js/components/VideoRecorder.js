@@ -2,6 +2,7 @@
  * VideoRecorder - Módulo desacoplable para grabar videos del grafo 3D
  * Puede eliminarse completamente sin afectar la funcionalidad principal
  */
+import * as THREE from 'three';
 export class VideoRecorder {
     constructor(renderer, scene, camera) {
         this.renderer = renderer;
@@ -240,7 +241,7 @@ export class VideoRecorder {
             durations: [5, 10, 15, 20],
             qualities: ['low', 'medium', 'high'],
             formats: ['webm', 'mp4'],
-            rotationSpeeds: [0.5, 1, 1.5, 2]
+            rotationSpeeds: [0.3, 0.5, 0.8, 1.2]
         };
     }
     

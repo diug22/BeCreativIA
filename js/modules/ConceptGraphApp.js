@@ -58,7 +58,22 @@ export class ConceptGraphApp {
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => {
                 this.toggleLabels();
-                toggleBtn.textContent = this.renderer.labelsVisible ? '👀' : '🙈';
+                
+                // Update icon based on labels visibility  
+                if (this.renderer.labelsVisible) {
+                    // Labels visible - show closed eye with line (blocked view)
+                    toggleBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12s3-7 10-7 10 7 10 7"></path>
+                        <path d="M2 12s3 7 10 7 10-7 10-7"></path>
+                        <line x1="4" y1="4" x2="20" y2="20"></line>
+                    </svg>`;
+                } else {
+                    // Labels hidden - show open eye (clear view)
+                    toggleBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>`;
+                }
             });
         }
         
@@ -407,11 +422,6 @@ export class ConceptGraphApp {
 
     toggleLabels() {
         this.renderer.toggleLabels();
-        
-        const eyeIcon = document.getElementById('eyeIcon');
-        if (eyeIcon) {
-            eyeIcon.textContent = this.renderer.labelsVisible ? '👀' : '🙈';
-        }
     }
 
     clearSelection() {

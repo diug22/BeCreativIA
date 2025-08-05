@@ -242,6 +242,29 @@
             border-color: rgba(0, 170, 255, 0.3);
         }
         
+        /* Video button enabled state override */
+        .control-button.video-enabled {
+            opacity: 1 !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+        }
+        
+        .control-button.video-enabled:disabled {
+            opacity: 1 !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+        }
+        
+        /* Loading spinner animation */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .control-button.loading svg {
+            animation: spin 1s linear infinite;
+        }
+        
         /* Iterations Counter */
         .header-iterations {
             display: flex;
@@ -1042,8 +1065,19 @@
                 <button id="header-increase-iterations" type="button">›</button>
             </div>
             
-            <button class="control-button" id="header-video" title="Crear video para redes sociales">🎬</button>
-            <button class="control-button" id="header-toggle" title="Alternar etiquetas">👀</button>
+            <button class="control-button" id="header-video" title="Crea un grafo para grabar video" disabled style="opacity: 0.5; cursor: not-allowed;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                </svg>
+            </button>
+            <button class="control-button" id="header-toggle" title="Alternar etiquetas">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7"></path>
+                    <path d="M2 12s3 7 10 7 10-7 10-7"></path>
+                    <line x1="4" y1="4" x2="20" y2="20"></line>
+                </svg>          
+            </button>
         </div>
     </header>
     <!-- Initial 2D Screen -->

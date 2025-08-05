@@ -11,20 +11,20 @@ export class ApiService {
         
         // Load production config if needed
         if (this.isProduction) {
-            this.loadProductionConfig();
+            //this.loadProductionConfig();
         }
         
         console.log('ApiService initialized with baseUrl:', this.baseUrl, '(isProduction:', this.isProduction + ')');
     }
     
-    async loadProductionConfig() {
+    /*async loadProductionConfig() {
         try {
             const { productionConfig } = await import('../config/production.js');
             this.bypassToken = productionConfig.bypassToken;
         } catch (error) {
             console.warn('Could not load production config:', error);
         }
-    }
+    }*/
     
     getHeaders() {
         const headers = {

@@ -128,6 +128,27 @@ export class GraphRenderer {
         // Initialize video button state (disabled by default)
         this.updateVideoButtonState();
         
+        // Add global debug function
+        window.debugVideoButtonState = () => {
+            console.log('Debug Video Button State:', {
+                hasVideoBtn: !!document.getElementById('header-video'),
+                nodesCount: this.nodes.size,
+                videoModulesLoaded: this.videoModulesLoaded,
+                nodes: Array.from(this.nodes.keys())
+            });
+            this.updateVideoButtonState();
+        };
+        
+        // Add periodic check to ensure button state is correct
+        setInterval(() => {
+            const hasNodes = this.nodes.size > 0;
+            const videoBtn = document.getElementById('header-video');
+            if (videoBtn && hasNodes && videoBtn.disabled) {
+                console.log('GraphRenderer: Periodic check - forcing video button enable');
+                this.updateVideoButtonState();
+            }
+        }, 2000);
+        
         // Try to load video modules (non-blocking)
         this.initializeVideoModules();
     }
@@ -144,15 +165,26 @@ export class GraphRenderer {
             }
             
             const loaded = await loadVideoModules();
+            
             if (loaded && VideoRecorder && VideoModal) {
                 this.videoRecorder = new VideoRecorder(this.renderer, this.scene, this.camera);
                 this.videoModal = new VideoModal(this.videoRecorder);
-                this.videoModulesLoaded = true;
-                
+                this.videoModulesLoaded = true;                
                 console.log('GraphRenderer: Video recording modules loaded successfully');
                 
                 // Add global access for video functionality
                 window.openVideoModal = () => this.openVideoModal();
+                
+                // Debug function to manually enable video button
+                window.debugEnableVideoButton = () => {
+                    const btn = document.getElementById('header-video');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.classList.add('video-enabled');
+                        btn.title = 'Crear video para redes sociales';
+                        console.log('Video button force enabled with CSS class');
+                    }
+                };
                 
                 // Update button state now that modules are loaded
                 this.updateVideoButtonState();
@@ -161,21 +193,83 @@ export class GraphRenderer {
                 if (window.va) {
                     window.va('track', 'Video Modules Loaded');
                 }
+            } else {
+                console.warn('GraphRenderer: Video modules failed to load properly');
             }
         } catch (error) {
             console.warn('GraphRenderer: Failed to load video modules:', error);
         }
     }
     
-    openVideoModal() {
-        if (this.videoModal && Object.keys(this.nodes).length > 0) {
-            this.videoModal.show();
-        } else if (!this.videoModulesLoaded) {
-            console.warn('GraphRenderer: Video modules not loaded');
-            this.showVideoError('Módulos de video no disponibles');
-        } else {
+    async openVideoModal() {
+        // Check if we have nodes first
+        if (this.nodes.size === 0) {
             console.warn('GraphRenderer: No nodes to record');
-            this.showVideoError('Necesitas crear un grafo antes de grabar un video');
+            this.showVideoError('Crea un grafo antes de grabar video');
+            return;
+        }
+
+        // If modules are not loaded, try to load them now
+        if (!this.videoModulesLoaded) {
+            console.log('GraphRenderer: Video modules not loaded, trying to load them now...');
+            
+            // Show loading state
+            const videoBtn = document.getElementById('header-video');
+            if (videoBtn) {
+                videoBtn.disabled = true;
+                videoBtn.classList.add('loading');
+                videoBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="2" x2="12" y2="6"></line>
+                    <line x1="12" y1="18" x2="12" y2="22"></line>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                    <line x1="2" y1="12" x2="6" y2="12"></line>
+                    <line x1="18" y1="12" x2="22" y2="12"></line>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                </svg>`;
+                videoBtn.title = 'Cargando módulos de video...';
+            }
+            
+            try {
+                await this.initializeVideoModules();
+                
+                // Reset button
+                if (videoBtn) {
+                    videoBtn.classList.remove('loading');
+                    videoBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>`;
+                    this.updateVideoButtonState();
+                }
+                
+                // Try again now that modules should be loaded
+                if (this.videoModulesLoaded && this.videoModal) {
+                    this.videoModal.show();
+                } else {
+                    throw new Error('Failed to load video modules');
+                }
+            } catch (error) {
+                console.error('GraphRenderer: Failed to load video modules on demand:', error);
+                
+                // Reset button
+                if (videoBtn) {
+                    videoBtn.classList.remove('loading');
+                    videoBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>`;
+                    this.updateVideoButtonState();
+                }
+                
+                this.showVideoError('Error cargando los módulos de video. Intenta recargando la página.');
+            }
+        } else if (this.videoModal) {
+            this.videoModal.show();
+        } else {
+            console.warn('GraphRenderer: Video modules loaded but modal not available');
+            this.showVideoError('Módulos de video no disponibles');
         }
     }
     
@@ -215,21 +309,41 @@ export class GraphRenderer {
     
     updateVideoButtonState() {
         const videoBtn = document.getElementById('header-video');
-        if (!videoBtn) return;
         
-        const hasNodes = Object.keys(this.nodes).length > 0;
+        if (!videoBtn) {
+            console.warn('GraphRenderer: Video button not found!');
+            return;
+        }
+        
+        const hasNodes = this.nodes.size > 0;
         const isLoaded = this.videoModulesLoaded;
         
-        if (hasNodes && isLoaded) {
+        console.log('GraphRenderer: Updating video button', { hasNodes, nodesCount: this.nodes.size, isLoaded });
+        
+        if (hasNodes) {
+            // FORCE enable the button by removing disabled attribute and setting all properties
+            videoBtn.removeAttribute('disabled');
             videoBtn.disabled = false;
-            videoBtn.style.opacity = '1';
-            videoBtn.style.cursor = 'pointer';
-            videoBtn.title = 'Crear video para redes sociales';
+            videoBtn.classList.add('video-enabled');
+            
+            // Clear any inline styles that might be interfering
+            videoBtn.style.removeProperty('opacity');
+            videoBtn.style.removeProperty('cursor');
+            videoBtn.style.removeProperty('pointer-events');
+            
+            videoBtn.title = isLoaded ? 'Crear video para redes sociales' : 'Crear video (cargar módulos si es necesario)';
+            
+            console.log('GraphRenderer: Video button ENABLED');
         } else {
+            videoBtn.setAttribute('disabled', 'true');
             videoBtn.disabled = true;
-            videoBtn.style.opacity = '0.5';
-            videoBtn.style.cursor = 'not-allowed';
-            videoBtn.title = hasNodes ? 'Cargando módulos de video...' : 'Crea un grafo para grabar video';
+            videoBtn.classList.remove('video-enabled');
+            videoBtn.style.setProperty('opacity', '0.5', 'important');
+            videoBtn.style.setProperty('cursor', 'not-allowed', 'important');
+            videoBtn.style.setProperty('pointer-events', 'none', 'important');
+            videoBtn.title = 'Crea un grafo para grabar video';
+            
+            console.log('GraphRenderer: Video button DISABLED');
         }
     }
 
@@ -265,86 +379,109 @@ export class GraphRenderer {
     // Removed fog and gradient background methods - only nebula remains
     
     createVolumetricNebula() {
-        // Create multiple layers of colorful nebula at different distances for depth
-        this.createNebulaLayer(120, 0.08, 800, 'distant');   // Purple/violet distant layer - increased opacity
-        this.createNebulaLayer(90, 0.12, 600, 'medium');     // Blue/cyan medium layer - increased opacity 
-        this.createNebulaLayer(65, 0.15, 500, 'close');      // Pink/magenta close layer - increased opacity
-        this.createNebulaLayer(45, 0.18, 400, 'inner');      // Orange/yellow inner layer - increased opacity
+        // Create modern atmospheric bokeh layers with depth-of-field effect
+        this.createBokehLayer(150, 0.15, 200, 'far');       // Far depth layer - more visible
+        this.createBokehLayer(100, 0.25, 150, 'medium');    // Medium depth layer - clearer
+        this.createBokehLayer(60, 0.35, 100, 'near');       // Near depth layer - prominent
         
         // Initially hide all nebula layers
         this.hideNebula();
         
-        console.log('GraphRenderer: Colorful volumetric nebula created with 4 layers');
+        console.log('GraphRenderer: Modern atmospheric bokeh nebula created with 3 depth layers');
     }
     
-    createNebulaLayer(radius, opacity, particleCount, layerType) {
-        // Create individual sphere geometries instead of points
+    createBokehLayer(radius, baseOpacity, particleCount, depthType) {
         const nebulaGroup = new THREE.Group();
         
-        // Color schemes for different layers
-        const colorSchemes = {
-            distant: { r: 0.4, g: 0.2, b: 0.8 },  // Purple/violet
-            medium: { r: 0.1, g: 0.4, b: 0.9 },   // Blue/cyan
-            close: { r: 0.8, g: 0.3, b: 0.6 },    // Pink/magenta  
-            inner: { r: 0.9, g: 0.5, b: 0.2 }     // Orange/yellow
+        // Modern atmospheric color palette - más brillante pero elegante
+        const modernColors = [
+            0x1e2a3a, // Azul noche más claro
+            0x2a3441, // Gris espacial más visible
+            0x3d4852, // Gris moderno más brillante
+            0x5bb3f0  // Azul acento más vibrante pero elegante
+        ];
+        
+        // Create bokeh texture canvas for soft circular particles
+        const createBokehTexture = (size = 64) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext('2d');
+            
+            // Create radial gradient (opaque center → transparent edge)
+            const gradient = context.createRadialGradient(
+                size / 2, size / 2, 0,
+                size / 2, size / 2, size / 2
+            );
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+            gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+            
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, size, size);
+            
+            return new THREE.CanvasTexture(canvas);
         };
         
-        const baseColor = colorSchemes[layerType] || colorSchemes.medium;
+        const bokehTexture = createBokehTexture();
         
-        // Generate particles in spherical distribution
+        // Generate particles with organic clustering
         for (let i = 0; i < particleCount; i++) {
-            // Spherical coordinates for even distribution
+            // Spherical coordinates with organic clustering
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.acos(2 * Math.random() - 1);
-            const r = radius + (Math.random() - 0.5) * 25; // Increased radius variation
+            
+            // Add some clustering using bias toward certain regions
+            const clusterBias = Math.sin(theta * 3) * Math.cos(phi * 2) * 0.3;
+            const r = radius + (Math.random() - 0.5) * 15 + clusterBias * 10;
             
             const x = r * Math.sin(phi) * Math.cos(theta);
             const y = r * Math.sin(phi) * Math.sin(theta);
             const z = r * Math.cos(phi);
             
-            // Create small sphere geometry for more nebula-like appearance - increased size
-            const particleSize = 0.5 + Math.random() * 1.0;
-            const sphereGeometry = new THREE.SphereGeometry(particleSize, 8, 6);
+            // Distance from camera for depth-based effects
+            const distanceFromCenter = Math.sqrt(x*x + y*y + z*z);
             
-            // Color variation within the layer's scheme
-            const colorVariation = 0.3;
-            const finalColor = {
-                r: Math.max(0, Math.min(1, baseColor.r + (Math.random() - 0.5) * colorVariation)),
-                g: Math.max(0, Math.min(1, baseColor.g + (Math.random() - 0.5) * colorVariation)),
-                b: Math.max(0, Math.min(1, baseColor.b + (Math.random() - 0.5) * colorVariation))
-            };
+            // Size inversely proportional to distance (perspective effect) - más visible
+            const perspectiveSize = Math.max(1.2, 5.5 - (distanceFromCenter * 0.025));
+            const finalSize = perspectiveSize * (0.8 + Math.random() * 0.8);
             
-            // Distance-based intensity - increased for more visibility
-            const distanceFactor = 1 - (r - radius + 12) / 25;
-            const intensity = (0.6 + Math.random() * 0.6) * Math.max(0.6, distanceFactor);
+            // Choose color from modern palette
+            const colorIndex = Math.floor(Math.random() * modernColors.length);
+            const baseColor = new THREE.Color(modernColors[colorIndex]);
             
-            const material = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(
-                    finalColor.r * intensity,
-                    finalColor.g * intensity, 
-                    finalColor.b * intensity
-                ),
+            // Depth-based opacity (farther = more transparent) - menos agresivo
+            const depthOpacity = Math.max(0.3, 1.0 - (distanceFromCenter * 0.005));
+            const finalOpacity = baseOpacity * depthOpacity * (0.8 + Math.random() * 0.4);
+            
+            // Create sprite material with bokeh texture
+            const material = new THREE.SpriteMaterial({
+                map: bokehTexture,
+                color: baseColor,
                 transparent: true,
-                opacity: opacity * (0.8 + Math.random() * 0.4),
+                opacity: finalOpacity,
                 blending: THREE.AdditiveBlending,
-                depthWrite: false
+                depthWrite: false,
+                alphaTest: 0.01
             });
             
-            const particle = new THREE.Mesh(sphereGeometry, material);
+            const particle = new THREE.Sprite(material);
             particle.position.set(x, y, z);
+            particle.scale.setScalar(finalSize);
             
-            // Add slight random rotation for more organic look
-            particle.rotation.set(
-                Math.random() * Math.PI,
-                Math.random() * Math.PI,
-                Math.random() * Math.PI
-            );
+            // Store original properties for animation
+            particle.userData = {
+                originalOpacity: finalOpacity,
+                depthFactor: depthOpacity,
+                originalScale: finalSize
+            };
             
             nebulaGroup.add(particle);
         }
         
-        nebulaGroup.name = `nebulaLayer_${layerType}_${radius}`;
-        nebulaGroup.renderOrder = -2; // Render before other elements
+        nebulaGroup.name = `bokehLayer_${depthType}_${radius}`;
+        nebulaGroup.renderOrder = -2;
         this.scene.add(nebulaGroup);
         
         // Store reference for control
@@ -485,6 +622,7 @@ export class GraphRenderer {
         // Create text label with improved styling
         const label = this.createTextLabel(concept, hue);
         label.position.set(position.x, position.y + 0.8, position.z);
+        label.visible = this.labelsVisible; // Respect initial labels visibility state
         if (animated) {
             label.material.opacity = 0;
         }
@@ -516,7 +654,14 @@ export class GraphRenderer {
         }
         
         // Update video button state since we now have nodes
+        console.log('GraphRenderer: About to update video button state after adding node');
         this.updateVideoButtonState();
+        
+        // Force update with delay to ensure DOM is ready
+        setTimeout(() => {
+            console.log('GraphRenderer: Force updating video button state after delay');
+            this.updateVideoButtonState();
+        }, 100);
         
         return nodeData;
     }
@@ -1001,16 +1146,31 @@ export class GraphRenderer {
         }
     }
     
-    // Add subtle animation to nebula layers
+    // Add subtle atmospheric animation to bokeh layers
     animateNebula() {
         if (!this.backgroundElements.nebula || !this.nebulaVisible) return;
         
-        const time = Date.now() * 0.00008; // Slightly slower animation
+        const time = Date.now() * 0.00003; // Much slower, more atmospheric
+        
         this.backgroundElements.nebula.forEach((layer, index) => {
-            // Very slow rotation for each layer in different directions
-            const rotationSpeed = (index % 2 === 0 ? 1 : -1) * 0.08;
+            // Ultra-subtle rotation - barely perceptible
+            const rotationSpeed = (index % 2 === 0 ? 1 : -1) * 0.02;
             layer.rotation.y = time * rotationSpeed;
-            layer.rotation.x = time * rotationSpeed * 0.25;
+            
+            // Add subtle depth breathing effect
+            layer.children.forEach((particle, particleIndex) => {
+                if (particle.userData) {
+                    // Subtle scale breathing
+                    const breathingOffset = (particleIndex * 0.1) + time * 2;
+                    const breathingFactor = 1 + Math.sin(breathingOffset) * 0.05;
+                    particle.scale.setScalar(particle.userData.originalScale * breathingFactor);
+                    
+                    // Subtle opacity breathing
+                    const opacityOffset = (particleIndex * 0.15) + time * 1.5;
+                    const opacityFactor = 1 + Math.sin(opacityOffset) * 0.2;
+                    particle.material.opacity = particle.userData.originalOpacity * opacityFactor;
+                }
+            });
         });
     }
     

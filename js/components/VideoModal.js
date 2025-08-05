@@ -14,6 +14,40 @@ export class VideoModal {
         console.log('VideoModal: Initialized as standalone component');
     }
     
+    // Función para crear iconos SVG consistentes
+    createIcon(type, size = 16) {
+        const icons = {
+            video: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>`,
+            clock: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12,6 12,12 16,14"></polyline>
+            </svg>`,
+            settings: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1m17.5-2.5L20 12l2.5 2.5M6.5 9.5L4 12l2.5 2.5"></path>
+            </svg>`,
+            rotate: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>`,
+            smartphone: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>`,
+            play: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>`,
+            x: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>`
+        };
+        return icons[type] || '';
+    }
+    
     createModal() {
         // Crear modal HTML
         this.modal = document.createElement('div');
@@ -24,13 +58,13 @@ export class VideoModal {
             <div class="video-modal-backdrop" data-action="close"></div>
             <div class="video-modal-content">
                 <div class="video-modal-header">
-                    <h2>📹 Crear Video para Redes Sociales</h2>
-                    <button class="video-modal-close" data-action="close">×</button>
+                    <h2>${this.createIcon('video', 18)} Crear Video para Redes Sociales</h2>
+                    <button class="video-modal-close" data-action="close">${this.createIcon('x', 16)}</button>
                 </div>
                 
                 <div class="video-modal-body">
                     <div class="video-setting">
-                        <label>⏱️ Duración</label>
+                        <label>${this.createIcon('clock', 14)} Duración</label>
                         <select id="video-duration">
                             <option value="5">5 segundos (Stories)</option>
                             <option value="10" selected>10 segundos (Recomendado)</option>
@@ -40,7 +74,7 @@ export class VideoModal {
                     </div>
                     
                     <div class="video-setting">
-                        <label>🎨 Calidad</label>
+                        <label>${this.createIcon('settings', 14)} Calidad</label>
                         <select id="video-quality">
                             <option value="medium">Media (Rápido)</option>
                             <option value="high" selected>Alta (Recomendado)</option>
@@ -49,17 +83,17 @@ export class VideoModal {
                     </div>
                     
                     <div class="video-setting">
-                        <label>🔄 Velocidad de Rotación</label>
+                        <label>${this.createIcon('rotate', 14)} Velocidad de Rotación</label>
                         <select id="video-speed">
-                            <option value="0.5">Lenta (Contemplativa)</option>
-                            <option value="1" selected>Normal</option>
-                            <option value="1.5">Rápida (Dinámica)</option>
-                            <option value="2">Muy Rápida</option>
+                            <option value="0.3">Muy Lenta (Elegante)</option>
+                            <option value="0.5" selected>Lenta (Contemplativa)</option>
+                            <option value="0.8">Normal</option>
+                            <option value="1.2">Rápida (Dinámica)</option>
                         </select>
                     </div>
                     
                     <div class="video-setting">
-                        <label>📱 Formato</label>
+                        <label>${this.createIcon('smartphone', 14)} Formato</label>
                         <select id="video-format">
                             <option value="webm" selected>WebM (Recomendado)</option>
                             <option value="mp4">MP4 (Experimental)</option>
@@ -67,7 +101,7 @@ export class VideoModal {
                     </div>
                     
                     <div class="video-preview">
-                        <div class="video-preview-icon">🎬</div>
+                        <div class="video-preview-icon">${this.createIcon('video', 32)}</div>
                         <p>Tu grafo girará 360° con una cámara suave y se descargará automáticamente</p>
                         <small>Perfecto para Instagram, TikTok, LinkedIn y Twitter</small>
                     </div>
@@ -78,8 +112,8 @@ export class VideoModal {
                         Cancelar
                     </button>
                     <button class="video-btn video-btn-primary" id="start-recording">
-                        <span class="video-btn-text">🎬 Crear Video</span>
-                        <span class="video-btn-loading hidden">🎥 Grabando...</span>
+                        <span class="video-btn-text">${this.createIcon('play', 14)} Crear Video</span>
+                        <span class="video-btn-loading hidden">${this.createIcon('video', 14)} Grabando...</span>
                     </button>
                 </div>
             </div>
@@ -119,33 +153,33 @@ export class VideoModal {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.8);
-                backdrop-filter: blur(10px);
+                background: rgba(0, 0, 0, 0.92);
+                backdrop-filter: blur(25px);
             }
             
             .video-modal-content {
                 position: relative;
-                background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 20, 0.95));
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 16px;
+                background: rgba(0, 0, 0, 0.95);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
                 padding: 0;
-                max-width: 500px;
+                max-width: 480px;
                 width: 90vw;
                 max-height: 90vh;
                 overflow: hidden;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-                backdrop-filter: blur(20px);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(25px);
                 transform: scale(1);
                 transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
             
             .video-modal.hidden .video-modal-content {
-                transform: scale(0.9);
+                transform: scale(0.95);
             }
             
             .video-modal-header {
-                padding: 2rem 2rem 1rem 2rem;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 1.5rem 1.5rem 1rem 1.5rem;
+                border-bottom: 1px solid var(--border-color);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -153,115 +187,137 @@ export class VideoModal {
             
             .video-modal-header h2 {
                 margin: 0;
-                color: #ffffff;
-                font-size: 1.5rem;
-                font-weight: 600;
-                background: linear-gradient(135deg, #ffffff, #00aaff);
+                color: var(--primary-color);
+                font-size: 1.25rem;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
             }
             
+            .video-modal-header h2 svg {
+                color: var(--accent-color);
+                -webkit-text-fill-color: var(--accent-color);
+            }
+            
             .video-modal-close {
                 background: none;
                 border: none;
-                color: #888;
-                font-size: 2rem;
+                color: var(--secondary-color);
+                font-size: 1.5rem;
                 cursor: pointer;
                 padding: 0;
-                width: 40px;
-                height: 40px;
+                width: 32px;
+                height: 32px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                border-radius: 8px;
+                border-radius: 6px;
                 transition: all 0.2s ease;
             }
             
             .video-modal-close:hover {
-                background: rgba(255, 255, 255, 0.1);
-                color: #ffffff;
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--primary-color);
             }
             
             .video-modal-body {
-                padding: 1.5rem 2rem;
+                padding: 1rem 1.5rem;
                 max-height: 400px;
                 overflow-y: auto;
             }
             
             .video-setting {
-                margin-bottom: 1.5rem;
+                margin-bottom: 1.25rem;
             }
             
             .video-setting label {
-                display: block;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
                 margin-bottom: 0.5rem;
-                color: #ffffff;
-                font-weight: 500;
-                font-size: 0.95rem;
+                color: var(--primary-color);
+                font-weight: 400;
+                font-size: 0.9rem;
+            }
+            
+            .video-setting label svg {
+                opacity: 0.8;
             }
             
             .video-setting select {
                 width: 100%;
                 padding: 0.75rem 1rem;
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.04);
+                border: 1px solid var(--border-color);
                 border-radius: 8px;
-                color: #ffffff;
+                color: var(--primary-color);
                 font-size: 0.9rem;
+                font-family: 'Inter', sans-serif;
                 cursor: pointer;
                 transition: all 0.2s ease;
             }
             
             .video-setting select:hover {
-                background: rgba(255, 255, 255, 0.08);
-                border-color: rgba(0, 170, 255, 0.3);
+                background: rgba(255, 255, 255, 0.06);
+                border-color: rgba(0, 170, 255, 0.4);
             }
             
             .video-setting select:focus {
                 outline: none;
-                border-color: rgba(0, 170, 255, 0.5);
-                box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.2);
+                border-color: var(--accent-color);
+                box-shadow: 0 0 0 2px rgba(0, 170, 255, 0.2);
+            }
+            
+            .video-setting select option {
+                background: var(--background-color);
+                color: var(--primary-color);
+                padding: 0.5rem;
             }
             
             .video-preview {
-                background: rgba(0, 170, 255, 0.1);
+                background: rgba(0, 170, 255, 0.08);
                 border: 1px solid rgba(0, 170, 255, 0.2);
-                border-radius: 12px;
-                padding: 1.5rem;
+                border-radius: 8px;
+                padding: 1.25rem;
                 text-align: center;
-                margin-top: 1.5rem;
+                margin-top: 1rem;
             }
             
             .video-preview-icon {
-                font-size: 2.5rem;
+                font-size: 2rem;
                 margin-bottom: 0.5rem;
             }
             
             .video-preview p {
                 margin: 0 0 0.5rem 0;
-                color: #ffffff;
-                font-size: 0.9rem;
+                color: var(--primary-color);
+                font-size: 0.85rem;
             }
             
             .video-preview small {
-                color: #00aaff;
-                font-size: 0.8rem;
+                color: var(--accent-color);
+                font-size: 0.75rem;
             }
             
             .video-modal-footer {
-                padding: 1.5rem 2rem 2rem 2rem;
-                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 1.25rem 1.5rem 1.5rem 1.5rem;
+                border-top: 1px solid var(--border-color);
                 display: flex;
-                gap: 1rem;
+                gap: 0.75rem;
                 justify-content: flex-end;
             }
             
             .video-btn {
-                padding: 0.75rem 1.5rem;
+                padding: 0.75rem 1.25rem;
                 border-radius: 8px;
-                font-size: 0.9rem;
-                font-weight: 500;
+                font-size: 0.85rem;
+                font-weight: 400;
+                font-family: 'Inter', sans-serif;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 border: none;
@@ -270,30 +326,36 @@ export class VideoModal {
                 gap: 0.5rem;
             }
             
+            .video-btn svg {
+                opacity: 0.9;
+            }
+            
             .video-btn-secondary {
-                background: rgba(255, 255, 255, 0.1);
-                color: #ffffff;
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.06);
+                color: var(--primary-color);
+                border: 1px solid var(--border-color);
             }
             
             .video-btn-secondary:hover {
-                background: rgba(255, 255, 255, 0.15);
+                background: rgba(255, 255, 255, 0.1);
+                border-color: rgba(255, 255, 255, 0.3);
             }
             
             .video-btn-primary {
-                background: linear-gradient(135deg, #00aaff, #0088cc);
-                color: #ffffff;
+                background: var(--accent-color);
+                color: var(--primary-color);
                 border: none;
-                box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
+                box-shadow: 0 2px 8px rgba(0, 170, 255, 0.25);
             }
             
             .video-btn-primary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(0, 170, 255, 0.4);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 170, 255, 0.35);
+                background: #0099ee;
             }
             
             .video-btn-primary:disabled {
-                opacity: 0.7;
+                opacity: 0.6;
                 transform: none;
                 cursor: not-allowed;
             }
@@ -493,7 +555,7 @@ export class VideoModal {
         // Resetear formulario a valores por defecto
         this.modal.querySelector('#video-duration').value = '10';
         this.modal.querySelector('#video-quality').value = 'high';
-        this.modal.querySelector('#video-speed').value = '1';
+        this.modal.querySelector('#video-speed').value = '0.5';
         this.modal.querySelector('#video-format').value = 'webm';
     }
     
