@@ -49,6 +49,19 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
+        /* Desktop and Mobile Layout Control */
+        .desktop-layout {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+        
+        .mobile-layout {
+            display: none;
+            width: 100%;
+        }
+        
         #app-header.hidden {
             transform: translateY(-100%);
             opacity: 0;
@@ -891,96 +904,195 @@
         }
         
         @media (max-width: 480px) {
-            /* Compact mobile header */
+            /* Switch to mobile layout */
+            .desktop-layout {
+                display: none !important;
+            }
+            
+            .mobile-layout {
+                display: block !important;
+            }
+            
+            /* 3-Line Mobile Header Layout */
             #app-header {
-                padding: 0.5rem 0.75rem 0.75rem 0.75rem;
+                padding: 0.75rem 1rem;
                 height: auto;
-                min-height: 3rem;
-                flex-wrap: wrap;
+                min-height: 6.5rem;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            
+            /* FIRST LINE: Brand + Concept (prioritized) */
+            .mobile-top-row {
+                display: flex;
                 justify-content: space-between;
-                align-items: flex-start;
-                gap: 0.5rem;
+                align-items: center;
+                width: 100%;
+                gap: 1rem;
             }
             
             .header-brand {
-                order: 1;
-                padding: 0.2rem 0.5rem;
+                padding: 0.4rem 0.8rem;
                 flex-shrink: 0;
-                align-self: center;
+                order: 1;
             }
             
             .brand-logo {
-                font-size: 0.95rem;
+                font-size: 1.1rem;
+                font-weight: 600;
             }
             
+            /* Concept gets maximum space and prominence */
             .header-concept {
-                order: 2;
-                margin: 0;
-                max-width: none;
                 flex: 1;
-                min-width: 0;
-                align-self: center;
+                margin: 0;
+                text-align: center;
+                order: 2;
             }
             
             .concept-label {
-                font-size: 0.55rem;
-                margin-bottom: 0.1rem;
+                font-size: 0.6rem;
+                margin-bottom: 0.2rem;
+                opacity: 0.8;
             }
             
             .concept-title {
-                font-size: 0.75rem;
-                padding: 0.25rem 0.6rem;
+                font-size: 1rem;
+                padding: 0.4rem 1.2rem;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                margin: 0;
+                border-radius: 16px;
+                min-height: 2rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* SECOND LINE: Controls (iterations, video, toggle) */
+            .mobile-controls-row {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                gap: 1rem;
+                padding-bottom: 10px;
+                padding-top: 10px;
             }
             
             .header-controls {
-                order: 3;
-                gap: 0.4rem;
-                flex-shrink: 0;
-                align-self: center;
-            }
-            
-            .header-search-container {
-                order: 4;
-                width: 100%;
                 display: flex;
+                gap: 1rem;
+                align-items: center;
                 justify-content: center;
-                margin-top: 0.5rem;
+                width: 100%;
             }
             
-            .header-search-wrapper {
-                width: 200px;
+            /* Hide search container from normal flow for repositioning */
+            .header-search-container {
+                display: none;
             }
             
-            #header-search-input {
-                font-size: 0.75rem;
-                padding: 0 0.8rem;
-                height: 32px;
-            }
-            
-            .control-button {
-                width: 32px;
-                height: 32px;
-                font-size: 0.8rem;
-            }
-            
+            /* Iterations counter gets more prominence */
             .header-iterations {
-                padding: 0.3rem 0.6rem;
-                gap: 0.3rem;
-                border-radius: 16px;
+                padding: 0.5rem 1rem;
+                gap: 0.6rem;
+                border-radius: 20px;
+                min-width: 90px;
+                order: 1;
             }
             
             .header-iterations button {
-                width: 18px;
-                height: 18px;
-                font-size: 0.8rem;
+                width: 26px;
+                height: 26px;
+                font-size: 1rem;
+                border-radius: 50%;
             }
             
             .header-iterations span {
-                font-size: 0.75rem;
-                min-width: 16px;
+                font-size: 0.9rem;
+                min-width: 20px;
+                font-weight: 500;
+            }
+            
+            /* Control buttons */
+            .control-button {
+                width: 44px;
+                height: 44px;
+                font-size: 0.95rem;
+                border-radius: 12px;
+            }
+            
+            /* Video button */
+            #header-video {
+                order: 2;
+            }
+            
+            /* Toggle button */
+            #header-toggle {
+                order: 3;
+            }
+            
+            /* THIRD LINE: Search bar (full width) */
+            .mobile-search-row {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+            }
+            
+            .mobile-search-wrapper {
+                width: 100%;
+                max-width: 300px;
+                height: 42px;
+                background: rgba(255, 255, 255, 0.04);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 21px;
+                padding: 0;
+                backdrop-filter: blur(15px);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+            }
+            
+            .mobile-search-wrapper:hover {
+                background: rgba(255, 255, 255, 0.06);
+                border-color: rgba(0, 170, 255, 0.15);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 20px rgba(0, 170, 255, 0.08);
+            }
+            
+            .mobile-search-wrapper.focused {
+                background: rgba(255, 255, 255, 0.08);
+                border-color: rgba(0, 170, 255, 0.3);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 25px rgba(0, 170, 255, 0.15);
+            }
+            
+            #mobile-search-input {
+                flex: 1;
+                height: 40px;
+                background: transparent;
+                border: none;
+                outline: none;
+                color: var(--primary-color);
+                font-size: 0.85rem;
+                font-weight: 300;
+                padding: 0 1.25rem;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                letter-spacing: 0.02em;
+                transition: all 0.3s ease;
+                text-transform: uppercase;
+            }
+            
+            #mobile-search-input::placeholder {
+                color: var(--secondary-color);
+                opacity: 0.5;
+                font-weight: 300;
             }
         }
         
@@ -1040,44 +1152,92 @@
 <body>
     <!-- Modern Minimalist Header -->
     <header id="app-header" class="hidden">
-        <!-- Brand Section -->
-        <div class="header-brand" id="header-brand" title="Volver al inicio">
-            <div class="brand-logo">BeCreativIA</div>
+        <!-- Desktop Layout (default) -->
+        <div class="desktop-layout">
+            <!-- Brand Section -->
+            <div class="header-brand" id="header-brand" title="Volver al inicio">
+                <div class="brand-logo">BeCreativIA</div>
+            </div>
+            
+            <!-- Concept Title Section -->
+            <div class="header-concept">
+                <div class="concept-label">Explorando</div>
+                <div class="concept-title" id="concept-title">Concepto</div>
+            </div>
+            
+            <!-- Controls Section -->
+            <div class="header-controls">
+                <div class="header-search-container">
+                    <div class="header-search-wrapper" id="header-search-wrapper">
+                        <input type="text" id="header-search-input" placeholder="Buscar o añadir concepto..." maxlength="35" autocomplete="off" spellcheck="false">
+                    </div>
+                </div>
+                
+                <div class="header-iterations">
+                    <button id="header-decrease-iterations" type="button">‹</button>
+                    <span id="header-iteration-count">1</span>
+                    <button id="header-increase-iterations" type="button">›</button>
+                </div>
+                
+                <button class="control-button" id="header-video" title="Crea un grafo para grabar video" disabled style="opacity: 0.5; cursor: not-allowed;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                </button>
+                <button class="control-button" id="header-toggle" title="Alternar etiquetas">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12s3-7 10-7 10 7 10 7"></path>
+                        <path d="M2 12s3 7 10 7 10-7 10-7"></path>
+                        <line x1="4" y1="4" x2="20" y2="20"></line>
+                    </svg>          
+                </button>
+            </div>
         </div>
         
-        <!-- Concept Title Section -->
-        <div class="header-concept">
-            <div class="concept-label">Explorando</div>
-            <div class="concept-title" id="concept-title">Concepto</div>
-        </div>
-        
-        <!-- Controls Section -->
-        <div class="header-controls">
-            <div class="header-search-container">
-                <div class="header-search-wrapper" id="header-search-wrapper">
-                    <input type="text" id="header-search-input" placeholder="Buscar o añadir concepto..." maxlength="35" autocomplete="off" spellcheck="false">
+        <!-- Mobile Layout (3-line structure) -->
+        <div class="mobile-layout">
+            <!-- FIRST LINE: Brand + Concept -->
+            <div class="mobile-top-row">
+                <div class="header-brand" id="mobile-header-brand" title="Volver al inicio">
+                    <div class="brand-logo">BeCreativIA</div>
+                </div>
+                <div class="header-concept">
+                    <div class="concept-label">Explorando</div>
+                    <div class="concept-title" id="mobile-concept-title">Concepto</div>
                 </div>
             </div>
             
-            <div class="header-iterations">
-                <button id="header-decrease-iterations" type="button">‹</button>
-                <span id="header-iteration-count">1</span>
-                <button id="header-increase-iterations" type="button">›</button>
+            <!-- SECOND LINE: Controls -->
+            <div class="mobile-controls-row">
+                <div class="header-iterations">
+                    <button id="mobile-header-decrease-iterations" type="button">‹</button>
+                    <span id="mobile-header-iteration-count">1</span>
+                    <button id="mobile-header-increase-iterations" type="button">›</button>
+                </div>
+                
+                <button class="control-button" id="mobile-header-video" title="Crea un grafo para grabar video" disabled style="opacity: 0.5; cursor: not-allowed;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                </button>
+                
+                <button class="control-button" id="mobile-header-toggle" title="Alternar etiquetas">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12s3-7 10-7 10 7 10 7"></path>
+                        <path d="M2 12s3 7 10 7 10-7 10-7"></path>
+                        <line x1="4" y1="4" x2="20" y2="20"></line>
+                    </svg>          
+                </button>
             </div>
             
-            <button class="control-button" id="header-video" title="Crea un grafo para grabar video" disabled style="opacity: 0.5; cursor: not-allowed;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                </svg>
-            </button>
-            <button class="control-button" id="header-toggle" title="Alternar etiquetas">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 12s3-7 10-7 10 7 10 7"></path>
-                    <path d="M2 12s3 7 10 7 10-7 10-7"></path>
-                    <line x1="4" y1="4" x2="20" y2="20"></line>
-                </svg>          
-            </button>
+            <!-- THIRD LINE: Search -->
+            <div class="mobile-search-row">
+                <div class="mobile-search-wrapper" id="mobile-search-wrapper">
+                    <input type="text" id="mobile-search-input" placeholder="Buscar o añadir concepto..." maxlength="35" autocomplete="off" spellcheck="false">
+                </div>
+            </div>
         </div>
     </header>
     <!-- Initial 2D Screen -->
@@ -1134,7 +1294,7 @@
             const inputLine = document.getElementById('input-line');
             const startButton = document.getElementById('start-button');
             
-            // Header elements
+            // Header elements (Desktop)
             const headerSearchInput = document.getElementById('header-search-input');
             const headerSearchWrapper = document.getElementById('header-search-wrapper');
             const headerBrand = document.getElementById('header-brand');
@@ -1143,13 +1303,30 @@
             const headerDecreaseBtn = document.getElementById('header-decrease-iterations');
             const headerIncreaseBtn = document.getElementById('header-increase-iterations');
             
+            // Mobile header elements
+            const mobileSearchInput = document.getElementById('mobile-search-input');
+            const mobileSearchWrapper = document.getElementById('mobile-search-wrapper');
+            const mobileHeaderBrand = document.getElementById('mobile-header-brand');
+            const mobileConceptTitle = document.getElementById('mobile-concept-title');
+            const mobileHeaderIterationCount = document.getElementById('mobile-header-iteration-count');
+            const mobileHeaderDecreaseBtn = document.getElementById('mobile-header-decrease-iterations');
+            const mobileHeaderIncreaseBtn = document.getElementById('mobile-header-increase-iterations');
+            
+            // Debug mobile elements availability
+            console.log('Mobile elements found:', {
+                mobileSearchInput: !!mobileSearchInput,
+                mobileSearchWrapper: !!mobileSearchWrapper,
+                mobileHeaderBrand: !!mobileHeaderBrand,
+                mobileConceptTitle: !!mobileConceptTitle
+            });
+            
             // Update iteration display
             function updateIterationDisplay() {
                 iterationCountEl.textContent = currentIterations;
                 decreaseBtn.disabled = currentIterations <= minIterations;
                 increaseBtn.disabled = currentIterations >= maxIterations;
                 
-                // Update header iteration display
+                // Update desktop header iteration display
                 if (headerIterationCount) {
                     headerIterationCount.textContent = currentIterations;
                 }
@@ -1158,6 +1335,17 @@
                 }
                 if (headerIncreaseBtn) {
                     headerIncreaseBtn.disabled = currentIterations >= maxIterations;
+                }
+                
+                // Update mobile header iteration display
+                if (mobileHeaderIterationCount) {
+                    mobileHeaderIterationCount.textContent = currentIterations;
+                }
+                if (mobileHeaderDecreaseBtn) {
+                    mobileHeaderDecreaseBtn.disabled = currentIterations <= minIterations;
+                }
+                if (mobileHeaderIncreaseBtn) {
+                    mobileHeaderIncreaseBtn.disabled = currentIterations >= maxIterations;
                 }
             }
             
@@ -1176,7 +1364,7 @@
                 }
             });
             
-            // Header iteration controls
+            // Header iteration controls (Desktop)
             if (headerDecreaseBtn) {
                 headerDecreaseBtn.addEventListener('click', () => {
                     if (currentIterations > minIterations) {
@@ -1188,6 +1376,25 @@
             
             if (headerIncreaseBtn) {
                 headerIncreaseBtn.addEventListener('click', () => {
+                    if (currentIterations < maxIterations) {
+                        currentIterations++;
+                        updateIterationDisplay();
+                    }
+                });
+            }
+            
+            // Mobile header iteration controls
+            if (mobileHeaderDecreaseBtn) {
+                mobileHeaderDecreaseBtn.addEventListener('click', () => {
+                    if (currentIterations > minIterations) {
+                        currentIterations--;
+                        updateIterationDisplay();
+                    }
+                });
+            }
+            
+            if (mobileHeaderIncreaseBtn) {
+                mobileHeaderIncreaseBtn.addEventListener('click', () => {
                     if (currentIterations < maxIterations) {
                         currentIterations++;
                         updateIterationDisplay();
@@ -1230,16 +1437,111 @@
                     headerSearchWrapper.classList.remove('focused');
                 });
                 
+                // Mobile search expansion functionality
+                function handleMobileSearch() {
+                    const isMobile = window.innerWidth <= 480;
+                    if (isMobile) {
+                        // Click to expand on mobile
+                        headerSearchWrapper.addEventListener('click', (e) => {
+                            if (!headerSearchWrapper.classList.contains('expanded')) {
+                                e.preventDefault();
+                                headerSearchWrapper.classList.add('expanded');
+                                setTimeout(() => {
+                                    headerSearchInput.focus();
+                                }, 300);
+                            }
+                        });
+                        
+                        // Collapse when clicking outside or losing focus
+                        document.addEventListener('click', (e) => {
+                            if (!headerSearchWrapper.contains(e.target) && headerSearchWrapper.classList.contains('expanded')) {
+                                headerSearchWrapper.classList.remove('expanded');
+                            }
+                        });
+                        
+                        // Collapse on escape key
+                        headerSearchInput.addEventListener('keydown', (e) => {
+                            if (e.key === 'Escape') {
+                                headerSearchWrapper.classList.remove('expanded');
+                                headerSearchInput.blur();
+                            }
+                        });
+                    }
+                }
+                
+                // Initialize mobile search functionality
+                handleMobileSearch();
+                
+                // Re-initialize on window resize
+                window.addEventListener('resize', () => {
+                    const isMobile = window.innerWidth <= 480;
+                    if (!isMobile) {
+                        headerSearchWrapper.classList.remove('expanded');
+                    }
+                });
+                
                 // Header search functionality - Let SearchManager handle this
                 // SearchManager will bind to the same input and handle all events
+                
+                // Mobile search functionality - SearchManager handles everything now
+                // Just log that mobile input is available for SearchManager
+                if (mobileSearchInput && mobileSearchWrapper) {
+                    console.log('Mobile search input available for SearchManager integration');
+                }
             }
             
-            // Header brand click to return home
+            // Mobile search input focus effects are handled above in the main mobile search block
+            
+            // Header brand click to return home (Desktop)
             if (headerBrand) {
                 headerBrand.addEventListener('click', () => {
                     if (window.conceptGraphApp) {
                         window.conceptGraphApp.returnToInitialState();
                     }
+                });
+            }
+            
+            // Mobile header brand click to return home
+            if (mobileHeaderBrand) {
+                mobileHeaderBrand.addEventListener('click', () => {
+                    if (window.conceptGraphApp) {
+                        window.conceptGraphApp.returnToInitialState();
+                    }
+                });
+            }
+            
+            // Mobile buttons functionality - sync with desktop buttons
+            const mobileVideoBtn = document.getElementById('mobile-header-video');
+            const mobileToggleBtn = document.getElementById('mobile-header-toggle');
+            const desktopVideoBtn = document.getElementById('header-video');
+            const desktopToggleBtn = document.getElementById('header-toggle');
+            
+            // Mobile video button forwards to desktop
+            if (mobileVideoBtn && desktopVideoBtn) {
+                mobileVideoBtn.addEventListener('click', () => {
+                    desktopVideoBtn.click();
+                });
+                
+                // Sync enabled/disabled state
+                const syncVideoState = () => {
+                    mobileVideoBtn.disabled = desktopVideoBtn.disabled;
+                    mobileVideoBtn.style.opacity = desktopVideoBtn.style.opacity;
+                    mobileVideoBtn.style.cursor = desktopVideoBtn.style.cursor;
+                };
+                
+                // Initial sync and observe changes
+                syncVideoState();
+                const videoObserver = new MutationObserver(syncVideoState);
+                videoObserver.observe(desktopVideoBtn, { 
+                    attributes: true, 
+                    attributeFilter: ['disabled', 'style'] 
+                });
+            }
+            
+            // Mobile toggle button forwards to desktop
+            if (mobileToggleBtn && desktopToggleBtn) {
+                mobileToggleBtn.addEventListener('click', () => {
+                    desktopToggleBtn.click();
                 });
             }
             
@@ -1285,18 +1587,24 @@
                 updateIterationDisplay();
             };
             
-            // Function to update concept title in header
+            // Function to update concept title in header (both layouts)
             window.updateConceptTitle = (concept) => {
                 if (conceptTitle && concept) {
                     conceptTitle.textContent = concept;
-                    console.log('Header concept title updated to:', concept);
                 }
+                if (mobileConceptTitle && concept) {
+                    mobileConceptTitle.textContent = concept;
+                }
+                console.log('Header concept title updated to:', concept);
             };
             
-            // Function to clear concept title
+            // Function to clear concept title (both layouts)
             window.clearConceptTitle = () => {
                 if (conceptTitle) {
                     conceptTitle.textContent = 'Concepto';
+                }
+                if (mobileConceptTitle) {
+                    mobileConceptTitle.textContent = 'Concepto';
                 }
             };
         });
