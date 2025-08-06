@@ -561,9 +561,14 @@ export class GraphRenderer {
     updateVisualEffects(currentTime, deltaTime) {
         const time = currentTime * 0.001; // Convert to seconds
         
-        // Animate node effects
+        // Animate atomic node effects
         this.nodes.forEach((nodeData, concept) => {
-            if (nodeData.sphere && nodeData.sphere.material) {
+            // Animate atomic nodes
+            if (nodeData.crystalGroup) { // keeping crystalGroup name for compatibility
+                this.animateAtomicNode(nodeData, time);
+            }
+            // Fallback for old sphere nodes (compatibility)
+            else if (nodeData.sphere && nodeData.sphere.material) {
                 // Subtle breathing effect on nodes
                 const breathe = Math.sin(time * 1.2 + nodeData.hue * 10) * 0.05 + 0.95;
                 nodeData.sphere.scale.setScalar(breathe);
@@ -702,69 +707,38 @@ export class GraphRenderer {
         const hue = ConceptUtils.getConceptHue(concept);
         const baseColor = new THREE.Color().setHSL(hue, 0.9, 0.7);
         const accentColor = new THREE.Color().setHSL(hue, 1.0, 0.9);
+        const cyanColor = new THREE.Color(0x00aaff);
         
-        // Create enhanced sphere geometry with high quality
-        const geometry = new THREE.SphereGeometry(0.5, 64, 64);
-        const material = new THREE.MeshPhysicalMaterial({ 
-            color: baseColor,
-            metalness: 0.3,
-            roughness: 0.1,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.1,
-            transmission: 0.1,
-            thickness: 0.5,
-            emissive: accentColor,
-            emissiveIntensity: 0.2,
-            transparent: true,
-            opacity: animated ? 0 : 0.95
-        });
-        const sphere = new THREE.Mesh(geometry, material);
-        sphere.position.set(position.x, position.y, position.z);
-        sphere.castShadow = true;
-        sphere.receiveShadow = true;
+        // Create Atomic Node Structure
+        const atomicNode = this.createAtomicNode(baseColor, accentColor, cyanColor, position, concept, animated);
         
-        // Enhanced multi-layer glow system
-        // Inner glow - bright and intense
-        const innerGlowGeometry = new THREE.SphereGeometry(0.65, 32, 32);
-        const innerGlowMaterial = new THREE.MeshBasicMaterial({
-            color: accentColor,
-            transparent: true,
-            opacity: animated ? 0 : 0.6,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-        const innerGlow = new THREE.Mesh(innerGlowGeometry, innerGlowMaterial);
-        innerGlow.position.copy(sphere.position);
-        
-        // Outer glow - softer and larger
-        const outerGlowGeometry = new THREE.SphereGeometry(0.9, 24, 24);
-        const outerGlowMaterial = new THREE.MeshBasicMaterial({
-            color: baseColor,
-            transparent: true,
-            opacity: animated ? 0 : 0.3,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-        const outerGlow = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
-        outerGlow.position.copy(sphere.position);
-        
-        // Create text label with improved styling
+        // Create external label above atom
         const label = this.createTextLabel(concept, hue);
-        label.position.set(position.x, position.y + 0.8, position.z);
-        label.visible = this.labelsVisible; // Respect initial labels visibility state
+        label.visible = this.labelsVisible;
         if (animated) {
             label.material.opacity = 0;
         }
         
-        // Make sphere clickable
-        sphere.userData = { concept, type: 'node' };
+        // Make atom clickable - use the main nucleus
+        atomicNode.nucleus.userData = { concept, type: 'node' };
         
-        this.scene.add(sphere);
-        this.scene.add(innerGlow);
-        this.scene.add(outerGlow);
-        this.scene.add(label);
+        // Add label to atom group so it moves together
+        atomicNode.group.add(label);
+        label.position.set(0, 1.0, 0); // Above the atom
         
-        const nodeData = { sphere, label, innerGlow, outerGlow, position, hue };
+        // Add atom group to scene
+        this.scene.add(atomicNode.group);
+        
+        const nodeData = { 
+            sphere: atomicNode.nucleus, // For compatibility with existing code
+            label: label, // External label above atom
+            innerGlow: atomicNode.orbits, 
+            outerGlow: null, // No electrons anymore
+            crystalGroup: atomicNode.group, // Full atom structure (keeping name for compatibility)
+            coreRotation: atomicNode.orbits, // For animation
+            position, 
+            hue 
+        };
         this.nodes.set(concept, nodeData);
         
         // Add loading node to tunnel if tunnel is active
@@ -775,12 +749,12 @@ export class GraphRenderer {
         
         // Add node to growth phase if active
         if (this.growthPhaseManager && this.growthPhaseManager.isPhaseActive()) {
-            this.growthPhaseManager.addNode(sphere, concept);
+            this.growthPhaseManager.addNode(atomicNode.nucleus, concept);
         }
         
         // Animate appearance if requested
         if (animated) {
-            this.animateNodeAppearance(nodeData);
+            this.animateAtomicNodeAppearance(nodeData);
         }
         
         // Update video button state since we now have nodes
@@ -794,6 +768,255 @@ export class GraphRenderer {
         }, 100);
         
         return nodeData;
+    }
+
+    createAtomicNode(baseColor, accentColor, cyanColor, position, concept, animated) {
+        // Create main atom group
+        const atomGroup = new THREE.Group();
+        atomGroup.position.set(position.x, position.y, position.z);
+        
+        // 1. Nucleus - Soft glowing sphere (clean, no text)
+        const nucleus = this.createNucleus(baseColor, accentColor, animated);
+        nucleus.position.set(0, 0, 0);
+        atomGroup.add(nucleus);
+        
+        // 2. Electron Orbits - Rotating rings (simplified to 2 rings)
+        const orbitsGroup = this.createElectronOrbits(cyanColor, animated);
+        orbitsGroup.position.set(0, 0, 0);
+        atomGroup.add(orbitsGroup);
+        
+        return {
+            group: atomGroup,
+            nucleus: nucleus,
+            orbits: orbitsGroup,
+            electrons: null // No individual electrons
+        };
+    }
+    
+    createNucleus(baseColor, accentColor, animated) {
+        // Create clean nucleus sphere - no text
+        const nucleusGeometry = new THREE.SphereGeometry(0.35, 32, 32); // Slightly smaller since no text
+        const nucleusMaterial = new THREE.MeshPhysicalMaterial({
+            color: baseColor,
+            metalness: 0.2,
+            roughness: 0.3,
+            clearcoat: 0.8,
+            clearcoatRoughness: 0.2,
+            emissive: accentColor,
+            emissiveIntensity: animated ? 0 : 0.3,
+            transparent: true,
+            opacity: animated ? 0 : 0.8
+        });
+        
+        const nucleus = new THREE.Mesh(nucleusGeometry, nucleusMaterial);
+        nucleus.castShadow = true;
+        nucleus.receiveShadow = true;
+        
+        return nucleus;
+    }
+    
+    
+    createElectronOrbits(cyanColor, animated) {
+        const orbitsGroup = new THREE.Group();
+        
+        // Create 2 orbital rings at different angles and sizes - simplified
+        const orbitConfigs = [
+            { radius: 0.9, tilt: 0, speed: 0.002 },
+            { radius: 1.3, tilt: Math.PI / 4, speed: 0.003 }
+        ];
+        
+        orbitConfigs.forEach((config, index) => {
+            const orbitGeometry = new THREE.RingGeometry(config.radius - 0.02, config.radius + 0.02, 64);
+            const orbitMaterial = new THREE.MeshBasicMaterial({
+                color: cyanColor,
+                transparent: true,
+                opacity: animated ? 0 : 0.3,
+                side: THREE.DoubleSide,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            
+            const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+            orbit.rotation.x = config.tilt;
+            orbit.rotation.y = Math.random() * Math.PI * 2;
+            
+            orbit.userData = {
+                rotationSpeed: config.speed,
+                axis: 'y'
+            };
+            
+            orbitsGroup.add(orbit);
+        });
+        
+        return orbitsGroup;
+    }
+    
+    
+    createCrystalEdges(geometry, cyanColor, animated) {
+        const edgesGroup = new THREE.Group();
+        
+        // Create wireframe for edges
+        const edges = new THREE.EdgesGeometry(geometry);
+        
+        // Animated energy flow material
+        const edgeMaterial = new THREE.LineBasicMaterial({
+            color: cyanColor,
+            transparent: true,
+            opacity: animated ? 0 : 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        
+        const wireframe = new THREE.LineSegments(edges, edgeMaterial);
+        edgesGroup.add(wireframe);
+        
+        // Add glow effect to edges
+        const glowMaterial = new THREE.LineBasicMaterial({
+            color: cyanColor,
+            transparent: true,
+            opacity: animated ? 0 : 0.4,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        
+        const glowWireframe = new THREE.LineSegments(edges.clone(), glowMaterial);
+        glowWireframe.scale.setScalar(1.05); // Slightly larger for glow effect
+        edgesGroup.add(glowWireframe);
+        
+        return edgesGroup;
+    }
+    
+    createHolographicCore(accentColor, cyanColor, animated) {
+        const coreGroup = new THREE.Group();
+        
+        // Remove the solid inner sphere - keep only the rotating rings for a cleaner look
+        
+        // Rotating ring elements inside
+        for (let i = 0; i < 3; i++) {
+            const ringGeometry = new THREE.RingGeometry(0.15 + i * 0.05, 0.18 + i * 0.05, 16);
+            const ringMaterial = new THREE.MeshBasicMaterial({
+                color: i % 2 === 0 ? cyanColor : accentColor,
+                transparent: true,
+                opacity: animated ? 0 : 0.5,
+                blending: THREE.AdditiveBlending,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            ring.rotation.x = Math.random() * Math.PI;
+            ring.rotation.y = Math.random() * Math.PI;
+            ring.userData = { 
+                rotationSpeed: (Math.random() + 0.5) * 0.02,
+                axis: Math.random() > 0.5 ? 'x' : 'y'
+            };
+            
+            coreGroup.add(ring);
+        }
+        
+        return coreGroup;
+    }
+    
+    createTechPatterns(geometry, cyanColor, animated) {
+        const patternsGroup = new THREE.Group();
+        
+        // Create subtle circuit-like patterns on crystal faces
+        const patternMaterial = new THREE.MeshBasicMaterial({
+            color: cyanColor,
+            transparent: true,
+            opacity: animated ? 0 : 0.2,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        
+        // Create smaller geometric shapes as tech patterns
+        const patternGeometry = new THREE.OctahedronGeometry(0.65);
+        const patterns = new THREE.Mesh(patternGeometry, patternMaterial);
+        patterns.scale.setScalar(1.02); // Slightly larger than main crystal
+        
+        patternsGroup.add(patterns);
+        
+        return patternsGroup;
+    }
+    
+    animateAtomicNodeAppearance(nodeData) {
+        const duration = 1200; // 1.2 seconds for smooth organic appearance
+        const startTime = Date.now();
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Ease-out animation with organic timing
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            
+            // Animate nucleus (main sphere)
+            if (nodeData.sphere && nodeData.sphere.material) {
+                nodeData.sphere.material.opacity = easeProgress * 0.8;
+                nodeData.sphere.material.emissiveIntensity = easeProgress * 0.3;
+            }
+            
+            // Animate electron orbits
+            if (nodeData.innerGlow && nodeData.innerGlow.children) {
+                nodeData.innerGlow.children.forEach(child => {
+                    if (child.material) {
+                        child.material.opacity = easeProgress * 0.3;
+                    }
+                });
+            }
+            
+            // Animate label
+            if (nodeData.label && nodeData.label.material) {
+                nodeData.label.material.opacity = easeProgress;
+            }
+            
+            // Scale animation for organic growth effect
+            const scale = easeProgress;
+            if (nodeData.crystalGroup) { // keeping crystalGroup name for compatibility
+                nodeData.crystalGroup.scale.set(scale, scale, scale);
+            }
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        };
+        
+        animate();
+    }
+    
+    animateAtomicNode(nodeData, time) {
+        // 1. Animate electron orbits rotation - much slower and smoother
+        if (nodeData.innerGlow && nodeData.innerGlow.children) {
+            nodeData.innerGlow.children.forEach(child => {
+                if (child.userData && child.userData.rotationSpeed) {
+                    if (child.userData.axis === 'y') {
+                        child.rotation.y += child.userData.rotationSpeed;
+                    } else {
+                        child.rotation.x += child.userData.rotationSpeed;
+                    }
+                }
+            });
+        }
+        
+        // 2. No individual electrons to animate anymore
+        
+        // 3. Animate nucleus - very gentle pulsing
+        if (nodeData.sphere && nodeData.sphere.material) {
+            // Very gentle emissive pulsing
+            const emissivePulse = Math.sin(time * 0.5 + nodeData.hue * 3) * 0.05 + 0.3;
+            nodeData.sphere.material.emissiveIntensity = emissivePulse;
+            
+            // Extremely subtle scale breathing
+            const breathe = Math.sin(time * 0.3 + nodeData.hue * 2) * 0.015 + 1;
+            nodeData.sphere.scale.set(breathe, breathe, breathe);
+        }
+        
+        // 4. Animate label if present
+        if (nodeData.label && nodeData.label.material) {
+            // Subtle label opacity pulsing
+            const labelPulse = Math.sin(time * 0.4 + nodeData.hue * 2) * 0.1 + 0.9;
+            nodeData.label.material.opacity = labelPulse;
+        }
     }
 
     createTextLabel(concept, hue, state = 'normal') {
@@ -847,46 +1070,13 @@ export class GraphRenderer {
     }
 
     applyGlassmorphismBackground(context, canvas, state) {
-        // Base glassmorphism background with gradient overlay
-        const gradient = context.createLinearGradient(10, 20, canvas.width - 20, canvas.height - 40);
-        gradient.addColorStop(0, `rgba(0, 0, 0, ${state.bgOpacity})`);
-        gradient.addColorStop(0.3, `rgba(255, 255, 255, 0.04)`);
-        gradient.addColorStop(0.7, `rgba(0, 170, 255, 0.06)`);
-        gradient.addColorStop(1, `rgba(0, 0, 0, ${state.bgOpacity * 0.9})`);
-        
-        context.fillStyle = gradient;
-        context.roundRect(10, 20, canvas.width - 20, canvas.height - 40, 15);
-        context.fill();
-        
-        // Inner highlight for glass effect
-        context.strokeStyle = `rgba(255, 255, 255, 0.15)`;
-        context.lineWidth = 1;
-        context.roundRect(11, 21, canvas.width - 22, canvas.height - 42, 14);
-        context.stroke();
+        // No background - labels will be text-only with glow effect
+        // This method is now empty but kept for compatibility
     }
     
     applyEnhancedBorder(context, canvas, state) {
-        // Main border with cyan accent gradient
-        const borderGradient = context.createLinearGradient(10, 20, canvas.width - 20, canvas.height - 40);
-        borderGradient.addColorStop(0, `rgba(0, 170, 255, ${state.borderOpacity})`);
-        borderGradient.addColorStop(0.5, `rgba(255, 255, 255, ${state.borderOpacity * 0.6})`);
-        borderGradient.addColorStop(1, `rgba(0, 170, 255, ${state.borderOpacity})`);
-        
-        context.strokeStyle = borderGradient;
-        context.lineWidth = 2;
-        
-        // Add subtle outer glow
-        context.shadowColor = `rgba(0, 170, 255, ${state.glowIntensity})`;
-        context.shadowBlur = 8;
-        context.shadowOffsetX = 0;
-        context.shadowOffsetY = 2;
-        
-        context.roundRect(10, 20, canvas.width - 20, canvas.height - 40, 15);
-        context.stroke();
-        
-        // Reset shadow
-        context.shadowColor = 'transparent';
-        context.shadowBlur = 0;
+        // No border - text-only labels
+        // This method is now empty but kept for compatibility
     }
     
     applyEnhancedTypography(context, canvas, concept, state) {
@@ -894,30 +1084,40 @@ export class GraphRenderer {
         const displayText = concept.toUpperCase();
         const fontSize = this.calculateOptimalFontSize(displayText, state.fontSize);
         
-        // Use Inter font with fallbacks
-        context.font = `${state.fontWeight} ${fontSize}px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+        // Use Inter font with fallbacks - make it bold like the logo
+        context.font = `600 ${fontSize}px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
         context.textAlign = 'center';
         context.textBaseline = 'middle';
         
-        // Gradient text effect - BeCreativIA style
-        const textGradient = context.createLinearGradient(0, 20, 0, canvas.height - 40);
-        textGradient.addColorStop(0, '#ffffff');
-        textGradient.addColorStop(0.6, '#ffffff');
-        textGradient.addColorStop(1, '#00aaff');
+        // Clear the canvas first
+        context.clearRect(0, 0, canvas.width, canvas.height);
         
-        context.fillStyle = textGradient;
-        
-        // Add text shadow for better readability
-        context.shadowColor = 'rgba(0, 0, 0, 0.4)';
-        context.shadowBlur = 3;
+        // Create BeCreativIA logo-style gradient effect
+        // 1. First layer - strong glow background
+        context.shadowColor = 'rgba(0, 170, 255, 0.8)';
+        context.shadowBlur = 20;
         context.shadowOffsetX = 0;
-        context.shadowOffsetY = 1;
+        context.shadowOffsetY = 0;
         
+        // White base text
+        context.fillStyle = '#ffffff';
         context.fillText(displayText, canvas.width / 2, canvas.height / 2);
         
-        // Reset shadow
+        // 2. Second layer - cyan glow
+        context.shadowColor = 'rgba(0, 170, 255, 0.6)';
+        context.shadowBlur = 10;
+        context.fillText(displayText, canvas.width / 2, canvas.height / 2);
+        
+        // 3. Third layer - strong white core
         context.shadowColor = 'transparent';
         context.shadowBlur = 0;
+        context.fillStyle = '#ffffff';
+        context.fillText(displayText, canvas.width / 2, canvas.height / 2);
+        
+        // 4. Final layer - subtle cyan outline
+        context.strokeStyle = 'rgba(0, 170, 255, 0.3)';
+        context.lineWidth = 1;
+        context.strokeText(displayText, canvas.width / 2, canvas.height / 2);
     }
     
     calculateOptimalFontSize(text, baseFontSize) {
@@ -972,8 +1172,12 @@ export class GraphRenderer {
         if (!fromNode || !toNode) return;
         
         // Create enhanced curved connection with multiple control points
-        const start = new THREE.Vector3(fromNode.position.x, fromNode.position.y, fromNode.position.z);
-        const end = new THREE.Vector3(toNode.position.x, toNode.position.y, toNode.position.z);
+        // Get actual node positions (crystal group position or fallback to stored position)
+        const startPos = fromNode.crystalGroup ? fromNode.crystalGroup.position : fromNode.position;
+        const endPos = toNode.crystalGroup ? toNode.crystalGroup.position : toNode.position;
+        
+        const start = new THREE.Vector3(startPos.x, startPos.y, startPos.z);
+        const end = new THREE.Vector3(endPos.x, endPos.y, endPos.z);
         const distance = start.distanceTo(end);
         
         // Create more organic curve with multiple control points
@@ -1131,10 +1335,16 @@ export class GraphRenderer {
         
         // Remove all nodes
         this.nodes.forEach(node => {
-            this.scene.remove(node.sphere);
+            // Remove crystal nodes or fallback to sphere nodes
+            if (node.crystalGroup) {
+                this.scene.remove(node.crystalGroup);
+            } else if (node.sphere) {
+                this.scene.remove(node.sphere);
+                if (node.innerGlow) this.scene.remove(node.innerGlow);
+                if (node.outerGlow) this.scene.remove(node.outerGlow);
+            }
+            
             this.scene.remove(node.label);
-            if (node.innerGlow) this.scene.remove(node.innerGlow);
-            if (node.outerGlow) this.scene.remove(node.outerGlow);
             if (node.selectionRing) this.scene.remove(node.selectionRing);
             if (node.pathLabel) this.scene.remove(node.pathLabel);
         });
@@ -1284,11 +1494,24 @@ export class GraphRenderer {
     }
 
     animateNodeToPosition(nodeData, targetPosition, duration = 1000) {
-        const startPosition = {
-            x: nodeData.sphere.position.x,
-            y: nodeData.sphere.position.y,
-            z: nodeData.sphere.position.z
-        };
+        // Get correct starting position based on node type
+        let startPosition;
+        
+        if (nodeData.crystalGroup) {
+            // Crystal nodes - use crystalGroup position
+            startPosition = {
+                x: nodeData.crystalGroup.position.x,
+                y: nodeData.crystalGroup.position.y,
+                z: nodeData.crystalGroup.position.z
+            };
+        } else {
+            // Fallback for sphere nodes
+            startPosition = {
+                x: nodeData.sphere.position.x,
+                y: nodeData.sphere.position.y,
+                z: nodeData.sphere.position.z
+            };
+        }
         
         const startTime = Date.now();
         
@@ -1307,14 +1530,22 @@ export class GraphRenderer {
                 z: startPosition.z + (targetPosition.z - startPosition.z) * easeProgress
             };
             
-            nodeData.sphere.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
-            if (nodeData.innerGlow) {
-                nodeData.innerGlow.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
+            if (nodeData.crystalGroup) {
+                // Move entire crystal group (includes label)
+                nodeData.crystalGroup.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
+            } else {
+                // Fallback for sphere nodes
+                nodeData.sphere.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
+                if (nodeData.innerGlow) {
+                    nodeData.innerGlow.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
+                }
+                if (nodeData.outerGlow) {
+                    nodeData.outerGlow.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
+                }
+                nodeData.label.position.set(currentPosition.x, currentPosition.y + 0.8, currentPosition.z);
             }
-            if (nodeData.outerGlow) {
-                nodeData.outerGlow.position.set(currentPosition.x, currentPosition.y, currentPosition.z);
-            }
-            nodeData.label.position.set(currentPosition.x, currentPosition.y + 0.8, currentPosition.z);
+            
+            // Update stored position
             nodeData.position = currentPosition;
             
             if (progress < 1) {
@@ -1564,17 +1795,29 @@ export class GraphRenderer {
             
             // Add selection ring
             if (!nodeData.selectionRing) {
-                const ringGeometry = new THREE.RingGeometry(0.6, 0.7, 32);
+                const ringGeometry = new THREE.RingGeometry(0.8, 0.9, 32); // Slightly larger for atoms
                 const ringMaterial = new THREE.MeshBasicMaterial({
-                    color: 0xffffff,
+                    color: 0x00aaff, // Cyan color to match design
                     side: THREE.DoubleSide,
                     transparent: true,
-                    opacity: 0.8
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
                 });
                 nodeData.selectionRing = new THREE.Mesh(ringGeometry, ringMaterial);
-                nodeData.selectionRing.position.copy(nodeData.sphere.position);
+                
+                // Use correct position based on node type
+                if (nodeData.crystalGroup) {
+                    // Atomic nodes - add ring to the atomic group so it moves with it
+                    nodeData.crystalGroup.add(nodeData.selectionRing);
+                    nodeData.selectionRing.position.set(0, 0, 0); // Relative to group center
+                } else {
+                    // Fallback for old sphere nodes
+                    nodeData.selectionRing.position.copy(nodeData.sphere.position);
+                    this.scene.add(nodeData.selectionRing);
+                }
+                
                 nodeData.selectionRing.lookAt(this.camera.position);
-                this.scene.add(nodeData.selectionRing);
             }
             nodeData.selectionRing.visible = true;
         } else {
@@ -1692,10 +1935,15 @@ export class GraphRenderer {
     hideNode(concept) {
         const nodeData = this.nodes.get(concept);
         if (nodeData) {
-            nodeData.sphere.visible = false;
+            // Hide crystal nodes or fallback to sphere nodes
+            if (nodeData.crystalGroup) {
+                nodeData.crystalGroup.visible = false;
+            } else {
+                nodeData.sphere.visible = false;
+                if (nodeData.innerGlow) nodeData.innerGlow.visible = false;
+                if (nodeData.outerGlow) nodeData.outerGlow.visible = false;
+            }
             nodeData.label.visible = false;
-            if (nodeData.innerGlow) nodeData.innerGlow.visible = false;
-            if (nodeData.outerGlow) nodeData.outerGlow.visible = false;
             this.hiddenNodes.add(concept);
         }
     }
@@ -1703,10 +1951,15 @@ export class GraphRenderer {
     showNode(concept) {
         const nodeData = this.nodes.get(concept);
         if (nodeData) {
-            nodeData.sphere.visible = true;
+            // Show crystal nodes or fallback to sphere nodes
+            if (nodeData.crystalGroup) {
+                nodeData.crystalGroup.visible = true;
+            } else {
+                nodeData.sphere.visible = true;
+                if (nodeData.innerGlow) nodeData.innerGlow.visible = true;
+                if (nodeData.outerGlow) nodeData.outerGlow.visible = true;
+            }
             nodeData.label.visible = this.labelsVisible;
-            if (nodeData.innerGlow) nodeData.innerGlow.visible = true;
-            if (nodeData.outerGlow) nodeData.outerGlow.visible = true;
         }
     }
 
