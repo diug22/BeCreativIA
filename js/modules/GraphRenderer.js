@@ -796,38 +796,142 @@ export class GraphRenderer {
         return nodeData;
     }
 
-    createTextLabel(concept, hue) {
+    createTextLabel(concept, hue, state = 'normal') {
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         canvas.width = 512;
         canvas.height = 128;
         
-        // Background for text
-        context.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        context.roundRect(10, 20, canvas.width - 20, canvas.height - 40, 15);
-        context.fill();
+        // State-based styling configuration
+        const states = {
+            normal: {
+                bgOpacity: 0.65,
+                borderOpacity: 0.6,
+                glowIntensity: 0.3,
+                fontSize: 28,
+                fontWeight: '400'
+            },
+            selected: {
+                bgOpacity: 0.8,
+                borderOpacity: 1.0,
+                glowIntensity: 0.6,
+                fontSize: 30,
+                fontWeight: '500'
+            },
+            hovered: {
+                bgOpacity: 0.75,
+                borderOpacity: 0.8,
+                glowIntensity: 0.45,
+                fontSize: 29,
+                fontWeight: '450'
+            }
+        };
         
-        // Border
-        context.strokeStyle = `hsl(${hue * 360}, 80%, 60%)`;
-        context.lineWidth = 3;
-        context.roundRect(10, 20, canvas.width - 20, canvas.height - 40, 15);
-        context.stroke();
+        const currentState = states[state];
         
-        // Text
-        context.fillStyle = '#ffffff';
-        context.font = 'bold 32px Arial';
-        context.textAlign = 'center';
-        context.fillText(concept, canvas.width / 2, canvas.height / 2 + 8);
+        // Apply enhanced styling
+        this.applyGlassmorphismBackground(context, canvas, currentState);
+        this.applyEnhancedBorder(context, canvas, currentState);
+        this.applyEnhancedTypography(context, canvas, concept, currentState);
         
         const texture = new THREE.CanvasTexture(canvas);
         const labelMaterial = new THREE.SpriteMaterial({ 
             map: texture,
-            transparent: true
+            transparent: true,
+            alphaTest: 0.001
         });
         const label = new THREE.Sprite(labelMaterial);
         label.scale.set(3, 0.75, 1);
         
         return label;
+    }
+
+    applyGlassmorphismBackground(context, canvas, state) {
+        // Base glassmorphism background with gradient overlay
+        const gradient = context.createLinearGradient(10, 20, canvas.width - 20, canvas.height - 40);
+        gradient.addColorStop(0, `rgba(0, 0, 0, ${state.bgOpacity})`);
+        gradient.addColorStop(0.3, `rgba(255, 255, 255, 0.04)`);
+        gradient.addColorStop(0.7, `rgba(0, 170, 255, 0.06)`);
+        gradient.addColorStop(1, `rgba(0, 0, 0, ${state.bgOpacity * 0.9})`);
+        
+        context.fillStyle = gradient;
+        context.roundRect(10, 20, canvas.width - 20, canvas.height - 40, 15);
+        context.fill();
+        
+        // Inner highlight for glass effect
+        context.strokeStyle = `rgba(255, 255, 255, 0.15)`;
+        context.lineWidth = 1;
+        context.roundRect(11, 21, canvas.width - 22, canvas.height - 42, 14);
+        context.stroke();
+    }
+    
+    applyEnhancedBorder(context, canvas, state) {
+        // Main border with cyan accent gradient
+        const borderGradient = context.createLinearGradient(10, 20, canvas.width - 20, canvas.height - 40);
+        borderGradient.addColorStop(0, `rgba(0, 170, 255, ${state.borderOpacity})`);
+        borderGradient.addColorStop(0.5, `rgba(255, 255, 255, ${state.borderOpacity * 0.6})`);
+        borderGradient.addColorStop(1, `rgba(0, 170, 255, ${state.borderOpacity})`);
+        
+        context.strokeStyle = borderGradient;
+        context.lineWidth = 2;
+        
+        // Add subtle outer glow
+        context.shadowColor = `rgba(0, 170, 255, ${state.glowIntensity})`;
+        context.shadowBlur = 8;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 2;
+        
+        context.roundRect(10, 20, canvas.width - 20, canvas.height - 40, 15);
+        context.stroke();
+        
+        // Reset shadow
+        context.shadowColor = 'transparent';
+        context.shadowBlur = 0;
+    }
+    
+    applyEnhancedTypography(context, canvas, concept, state) {
+        // Dynamic font sizing based on text length
+        const displayText = concept.toUpperCase();
+        const fontSize = this.calculateOptimalFontSize(displayText, state.fontSize);
+        
+        // Use Inter font with fallbacks
+        context.font = `${state.fontWeight} ${fontSize}px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        
+        // Gradient text effect - BeCreativIA style
+        const textGradient = context.createLinearGradient(0, 20, 0, canvas.height - 40);
+        textGradient.addColorStop(0, '#ffffff');
+        textGradient.addColorStop(0.6, '#ffffff');
+        textGradient.addColorStop(1, '#00aaff');
+        
+        context.fillStyle = textGradient;
+        
+        // Add text shadow for better readability
+        context.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        context.shadowBlur = 3;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 1;
+        
+        context.fillText(displayText, canvas.width / 2, canvas.height / 2);
+        
+        // Reset shadow
+        context.shadowColor = 'transparent';
+        context.shadowBlur = 0;
+    }
+    
+    calculateOptimalFontSize(text, baseFontSize) {
+        const textLength = text.length;
+        let fontSize = baseFontSize;
+        
+        // Adjust font size based on text length for better fit
+        if (textLength > 12) {
+            fontSize = Math.max(18, baseFontSize - (textLength - 12) * 1.2);
+        } else if (textLength < 6) {
+            fontSize = Math.min(34, baseFontSize + (6 - textLength) * 1);
+        }
+        
+        return fontSize;
     }
 
     animateNodeAppearance(nodeData) {

@@ -11,10 +11,12 @@ export class SearchManager {
         
         // DOM elements
         this.searchInput = null;
+        this.mobileSearchInput = null;
         this.iterationCount = null;
         this.decreaseBtn = null;
         this.increaseBtn = null;
         this.suggestionsContainer = null;
+        this.mobileSuggestionsContainer = null;
         
         // State
         this.currentIterations = 1; // Will sync with global state
@@ -42,10 +44,14 @@ export class SearchManager {
     }
     
     bindElements() {
+        // Bind desktop search input
         this.searchInput = document.getElementById('header-search-input');
         
+        // Bind mobile search input
+        this.mobileSearchInput = document.getElementById('mobile-search-input');
+        
         if (!this.searchInput) {
-            console.error('SearchManager: Search input not found - element with ID "header-search-input" does not exist');
+            console.error('SearchManager: Desktop search input not found - element with ID "header-search-input" does not exist');
             console.log('SearchManager: Available inputs:', document.querySelectorAll('input'));
             
             // Retry binding after a short delay (DOM might not be ready)
@@ -56,15 +62,21 @@ export class SearchManager {
             return;
         }
         
-        // Debug: Check if input is accessible
-        console.log('SearchManager: Input found:', !!this.searchInput);
-        console.log('SearchManager: Input disabled?', this.searchInput.disabled);
-        console.log('SearchManager: Input display:', window.getComputedStyle(this.searchInput).display);
+        // Debug: Check if inputs are accessible
+        console.log('SearchManager: Desktop input found:', !!this.searchInput);
+        console.log('SearchManager: Mobile input found:', !!this.mobileSearchInput);
+        console.log('SearchManager: Desktop input disabled?', this.searchInput.disabled);
+        console.log('SearchManager: Desktop input display:', window.getComputedStyle(this.searchInput).display);
         console.log('SearchManager: Header visibility:', document.getElementById('app-header')?.classList.contains('hidden'));
         
-        // Ensure input is enabled and accessible
+        // Ensure inputs are enabled and accessible
         this.searchInput.disabled = false;
         this.searchInput.style.pointerEvents = 'all';
+        
+        if (this.mobileSearchInput) {
+            this.mobileSearchInput.disabled = false;
+            this.mobileSearchInput.style.pointerEvents = 'all';
+        }
         
         // Set up event listeners
         this.setupEventListeners();
@@ -81,7 +93,7 @@ export class SearchManager {
     createSuggestions() {
         if (!this.searchInput) return;
         
-        // Create suggestions container
+        // Create desktop suggestions container
         this.suggestionsContainer = document.createElement('div');
         this.suggestionsContainer.id = 'search-suggestions';
         
@@ -135,7 +147,64 @@ export class SearchManager {
             console.log('SearchManager: Suggestions container added to body with fixed positioning');
         }
         
-        console.log('SearchManager: Suggestions container created and positioned');
+        console.log('SearchManager: Desktop suggestions container created and positioned');
+        
+        // Create mobile suggestions container if mobile input exists
+        if (this.mobileSearchInput) {
+            this.mobileSuggestionsContainer = document.createElement('div');
+            this.mobileSuggestionsContainer.id = 'mobile-search-suggestions';
+            
+            this.mobileSuggestionsContainer.style.cssText = `
+                position: absolute !important;
+                top: 100% !important;
+                left: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
+                background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.98)) !important;
+                border: 2px solid rgba(0, 170, 255, 0.2) !important;
+                border-top: none !important;
+                border-radius: 0 0 18px 18px !important;
+                max-height: 250px !important;
+                overflow-y: auto !important;
+                z-index: 99999 !important;
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                backdrop-filter: blur(20px) !important;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 170, 255, 0.1) !important;
+                pointer-events: all !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+            `;
+            
+            const mobileSearchWrapper = document.querySelector('.mobile-search-wrapper');
+            if (mobileSearchWrapper) {
+                mobileSearchWrapper.style.position = 'relative';
+                // Important: Remove overflow:hidden to allow suggestions to show
+                mobileSearchWrapper.style.overflow = 'visible';
+                
+                // Also ensure parent containers don't clip
+                const mobileSearchRow = document.querySelector('.mobile-search-row');
+                if (mobileSearchRow) {
+                    mobileSearchRow.style.overflow = 'visible';
+                }
+                
+                const mobileLayout = document.querySelector('.mobile-layout');
+                if (mobileLayout) {
+                    mobileLayout.style.overflow = 'visible';
+                }
+                
+                // Also ensure header doesn't clip suggestions
+                const appHeader = document.getElementById('app-header');
+                if (appHeader) {
+                    appHeader.style.overflow = 'visible';
+                }
+                
+                mobileSearchWrapper.appendChild(this.mobileSuggestionsContainer);
+                console.log('SearchManager: Mobile suggestions container added to mobile search wrapper');
+            }
+        }
     }
     
     updateFixedPosition() {
@@ -156,63 +225,101 @@ export class SearchManager {
     setupEventListeners() {
         if (!this.searchInput) return;
         
-        // Search input events
-        this.searchInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                this.performSearch();
-            }
-        });
+        // Desktop search input events
+        this.setupInputEventListeners(this.searchInput, 'desktop');
         
-        this.searchInput.addEventListener('input', (event) => {
-            this.updateSearchState();
-            this.updateSuggestions();
-        });
-        
-        this.searchInput.addEventListener('focus', () => {
-            const wrapper = document.getElementById('header-search-wrapper');
-            if (wrapper) wrapper.classList.add('focused');
-            this.updateSuggestions();
-        });
-        
-        this.searchInput.addEventListener('blur', () => {
-            const wrapper = document.getElementById('header-search-wrapper');
-            if (wrapper) wrapper.classList.remove('focused');
-            // Hide suggestions after a small delay to allow clicking on them
-            setTimeout(() => this.hideSuggestions(), 150);
-        });
+        // Mobile search input events
+        if (this.mobileSearchInput) {
+            this.setupInputEventListeners(this.mobileSearchInput, 'mobile');
+        }
         
         // Iteration controls - Let HTML handle these, just sync state
         // The iteration controls are already handled by the HTML script
         
-        console.log('SearchManager: Event listeners set up');
+        console.log('SearchManager: Event listeners set up for desktop and mobile');
     }
     
-    updateSearchState() {
-        const query = this.getSearchQuery();
+    setupInputEventListeners(input, type) {
+        // Common event handlers that work for both desktop and mobile
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.performSearch(type);
+            }
+        });
         
-        if (query.length === 0) {
-            this.searchInput.style.backgroundColor = 'rgba(255,255,255,0.05)';
-        } else {
-            // Check if node exists
-            const existingNode = this.findExistingNode(query);
-            if (existingNode) {
-                this.searchInput.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'; // Green tint
-                this.searchInput.title = `Nodo encontrado: ${existingNode}`;
-            } else {
-                this.searchInput.style.backgroundColor = 'rgba(0, 170, 255, 0.1)'; // Blue tint
-                this.searchInput.title = 'Presiona Enter para crear nuevo nodo';
+        input.addEventListener('input', (event) => {
+            this.updateSearchState(type);
+            this.updateSuggestions(type);
+            
+            // Keep both inputs in sync
+            this.syncInputs(input, type);
+        });
+        
+        input.addEventListener('focus', () => {
+            const wrapperId = type === 'desktop' ? 'header-search-wrapper' : 'mobile-search-wrapper';
+            const wrapper = document.getElementById(wrapperId);
+            if (wrapper) wrapper.classList.add('focused');
+            this.updateSuggestions(type);
+        });
+        
+        input.addEventListener('blur', () => {
+            const wrapperId = type === 'desktop' ? 'header-search-wrapper' : 'mobile-search-wrapper';
+            const wrapper = document.getElementById(wrapperId);
+            if (wrapper) wrapper.classList.remove('focused');
+            // Hide suggestions after a small delay to allow clicking on them
+            setTimeout(() => this.hideSuggestions(type), 150);
+        });
+        
+        console.log(`SearchManager: ${type} input event listeners set up`);
+    }
+    
+    syncInputs(changedInput, sourceType) {
+        const value = changedInput.value;
+        
+        if (sourceType === 'desktop' && this.mobileSearchInput) {
+            if (this.mobileSearchInput.value !== value) {
+                this.mobileSearchInput.value = value;
+            }
+        } else if (sourceType === 'mobile' && this.searchInput) {
+            if (this.searchInput.value !== value) {
+                this.searchInput.value = value;
             }
         }
     }
     
-    updateSuggestions() {
-        if (!this.suggestionsContainer) return;
+    updateSearchState(type = 'desktop') {
+        const input = type === 'desktop' ? this.searchInput : this.mobileSearchInput;
+        if (!input) return;
         
-        const query = this.getSearchQuery().toLowerCase();
+        const query = input.value.trim();
+        
+        if (query.length === 0) {
+            input.style.backgroundColor = 'rgba(255,255,255,0.05)';
+            input.title = '';
+        } else {
+            // Check if node exists
+            const existingNode = this.findExistingNode(query);
+            if (existingNode) {
+                input.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'; // Green tint
+                input.title = `Nodo encontrado: ${existingNode}`;
+            } else {
+                input.style.backgroundColor = 'rgba(0, 170, 255, 0.1)'; // Blue tint
+                input.title = 'Presiona Enter para crear nuevo nodo';
+            }
+        }
+    }
+    
+    updateSuggestions(type = 'desktop') {
+        const container = type === 'desktop' ? this.suggestionsContainer : this.mobileSuggestionsContainer;
+        const input = type === 'desktop' ? this.searchInput : this.mobileSearchInput;
+        
+        if (!container || !input) return;
+        
+        const query = input.value.trim().toLowerCase();
         
         if (query.length < 2) { // Show suggestions only after 2 characters
-            this.hideSuggestions();
+            this.hideSuggestions(type);
             return;
         }
         
@@ -245,7 +352,7 @@ export class SearchManager {
         console.log('SearchManager: Found suggestions:', suggestions);
         
         if (suggestions.length === 0) {
-            this.hideSuggestions();
+            this.hideSuggestions(type);
             return;
         }
         
@@ -265,43 +372,45 @@ export class SearchManager {
             `;
         });
         
-        this.suggestionsContainer.innerHTML = suggestionsHTML;
-        console.log('SearchManager: Suggestions HTML:', suggestionsHTML);
-        console.log('SearchManager: Container innerHTML set, showing suggestions...');
-        this.showSuggestions();
+        container.innerHTML = suggestionsHTML;
+        console.log(`SearchManager: ${type} suggestions HTML:`, suggestionsHTML);
+        console.log(`SearchManager: ${type} container innerHTML set, showing suggestions...`);
+        this.showSuggestions(type);
         
         // Add click listeners to suggestions
-        this.suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
+        container.querySelectorAll('.suggestion-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 const concept = e.target.getAttribute('data-concept');
-                this.selectSuggestion(concept);
+                this.selectSuggestion(concept, type);
             });
         });
     }
     
-    showSuggestions() {
-        if (!this.suggestionsContainer) {
-            console.error('SearchManager: Suggestions container not found when trying to show');
+    showSuggestions(type = 'desktop') {
+        const container = type === 'desktop' ? this.suggestionsContainer : this.mobileSuggestionsContainer;
+        
+        if (!container) {
+            console.error(`SearchManager: ${type} suggestions container not found when trying to show`);
             return;
         }
         
-        // Calculate position if using fixed positioning
-        if (this.suggestionsContainer.style.position === 'fixed') {
+        // Calculate position if using fixed positioning (only for desktop)
+        if (type === 'desktop' && this.suggestionsContainer.style.position === 'fixed') {
             this.updateFixedPosition();
         }
         
-        console.log('SearchManager: Showing suggestions container');
-        this.suggestionsContainer.style.display = 'block';
-        this.suggestionsContainer.style.visibility = 'visible';
-        this.suggestionsContainer.style.opacity = '1';
+        console.log(`SearchManager: Showing ${type} suggestions container`);
+        container.style.display = 'block';
+        container.style.visibility = 'visible';
+        container.style.opacity = '1';
         this.suggestionsVisible = true;
         
         // Force the container to be visible and above everything
-        this.suggestionsContainer.style.zIndex = '99999';
-        this.suggestionsContainer.style.pointerEvents = 'all';
+        container.style.zIndex = '99999';
+        container.style.pointerEvents = 'all';
         
-        console.log('SearchManager: Suggestions container display:', this.suggestionsContainer.style.display);
-        console.log('SearchManager: Suggestions container visibility:', this.suggestionsContainer.style.visibility);
+        console.log(`SearchManager: ${type} suggestions container display:`, container.style.display);
+        console.log(`SearchManager: ${type} suggestions container visibility:`, container.style.visibility);
         
         // Add suggestion item styles
         if (!document.getElementById('suggestion-styles')) {
@@ -363,32 +472,40 @@ export class SearchManager {
         }
     }
     
-    hideSuggestions() {
-        if (!this.suggestionsContainer) {
-            console.log('SearchManager: No suggestions container to hide');
+    hideSuggestions(type = 'desktop') {
+        const container = type === 'desktop' ? this.suggestionsContainer : this.mobileSuggestionsContainer;
+        
+        if (!container) {
+            console.log(`SearchManager: No ${type} suggestions container to hide`);
             return;
         }
         
-        console.log('SearchManager: Hiding suggestions container');
-        this.suggestionsContainer.style.display = 'none';
-        this.suggestionsContainer.style.visibility = 'hidden';
-        this.suggestionsContainer.style.opacity = '0';
+        console.log(`SearchManager: Hiding ${type} suggestions container`);
+        container.style.display = 'none';
+        container.style.visibility = 'hidden';
+        container.style.opacity = '0';
         this.suggestionsVisible = false;
     }
     
-    selectSuggestion(concept) {
-        if (this.searchInput) {
-            this.searchInput.value = concept;
-            this.updateSearchState();
+    selectSuggestion(concept, type = 'desktop') {
+        const input = type === 'desktop' ? this.searchInput : this.mobileSearchInput;
+        
+        if (input) {
+            input.value = concept;
+            this.updateSearchState(type);
+            
+            // Sync with the other input
+            this.syncInputs(input, type);
         }
-        this.hideSuggestions();
+        this.hideSuggestions(type);
         
         // Trigger search for the selected concept
-        this.performSearch();
+        this.performSearch(type);
     }
     
-    async performSearch() {
-        const query = this.getSearchQuery();
+    async performSearch(type = 'desktop') {
+        const input = type === 'desktop' ? this.searchInput : this.mobileSearchInput;
+        const query = input ? input.value.trim() : '';
         
         if (!query || this.isSearching) {
             return;
@@ -601,21 +718,38 @@ export class SearchManager {
     
     // UI State management
     setSearching(searching) {
+        // Update both desktop and mobile inputs
         if (this.searchInput) {
             this.searchInput.disabled = searching;
             this.searchInput.placeholder = searching ? 'Buscando...' : 'Buscar o añadir concepto...';
         }
+        
+        if (this.mobileSearchInput) {
+            this.mobileSearchInput.disabled = searching;
+            this.mobileSearchInput.placeholder = searching ? 'Buscando...' : 'Buscar o añadir concepto...';
+        }
     }
     
-    getSearchQuery() {
-        return this.searchInput ? this.searchInput.value.trim() : '';
+    getSearchQuery(type = 'desktop') {
+        const input = type === 'desktop' ? this.searchInput : this.mobileSearchInput;
+        return input ? input.value.trim() : '';
     }
     
-    clearSearch() {
-        if (this.searchInput) {
-            this.searchInput.value = '';
-            this.updateSearchState();
-            this.hideSuggestions();
+    clearSearch(type = 'both') {
+        if (type === 'both' || type === 'desktop') {
+            if (this.searchInput) {
+                this.searchInput.value = '';
+                this.updateSearchState('desktop');
+                this.hideSuggestions('desktop');
+            }
+        }
+        
+        if (type === 'both' || type === 'mobile') {
+            if (this.mobileSearchInput) {
+                this.mobileSearchInput.value = '';
+                this.updateSearchState('mobile');
+                this.hideSuggestions('mobile');
+            }
         }
     }
     
@@ -652,17 +786,25 @@ export class SearchManager {
     
     // Cleanup
     destroy() {
+        // Clean up desktop suggestions container
         if (this.suggestionsContainer && this.suggestionsContainer.parentNode) {
             this.suggestionsContainer.parentNode.removeChild(this.suggestionsContainer);
+        }
+        
+        // Clean up mobile suggestions container
+        if (this.mobileSuggestionsContainer && this.mobileSuggestionsContainer.parentNode) {
+            this.mobileSuggestionsContainer.parentNode.removeChild(this.mobileSuggestionsContainer);
         }
         
         this.graphRenderer = null;
         this.apiService = null;
         this.searchInput = null;
+        this.mobileSearchInput = null;
         this.iterationCount = null;
         this.decreaseBtn = null;
         this.increaseBtn = null;
         this.suggestionsContainer = null;
+        this.mobileSuggestionsContainer = null;
         
         this.onSearchStart = null;
         this.onSearchComplete = null;
