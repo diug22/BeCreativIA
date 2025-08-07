@@ -482,11 +482,16 @@ export class VideoModal {
     }
     
     getFormSettings() {
+        // Get current concept from header
+        const conceptTitleEl = document.getElementById('concept-title') || document.getElementById('mobile-concept-title');
+        const currentConcept = conceptTitleEl ? conceptTitleEl.textContent.trim() : 'Concepto';
+        
         return {
             duration: parseInt(this.modal.querySelector('#video-duration').value),
             quality: this.modal.querySelector('#video-quality').value,
             rotationSpeed: parseFloat(this.modal.querySelector('#video-speed').value),
-            format: this.modal.querySelector('#video-format').value
+            format: this.modal.querySelector('#video-format').value,
+            concept: currentConcept // Pass current concept to video recorder
         };
     }
     

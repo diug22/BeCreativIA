@@ -167,7 +167,7 @@ export class GraphRenderer {
             const loaded = await loadVideoModules();
             
             if (loaded && VideoRecorder && VideoModal) {
-                this.videoRecorder = new VideoRecorder(this.renderer, this.scene, this.camera);
+                this.videoRecorder = new VideoRecorder(this.renderer, this.scene, this.camera, this);
                 this.videoModal = new VideoModal(this.videoRecorder);
                 this.videoModulesLoaded = true;                
                 console.log('GraphRenderer: Video recording modules loaded successfully');

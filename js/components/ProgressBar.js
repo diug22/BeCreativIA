@@ -4,6 +4,8 @@
  */
 export class ProgressBar {
     constructor() {
+        console.log('ProgressBar: Constructor called');
+        
         this.container = null;
         this.progressBar = null;
         this.progressFill = null;
@@ -17,7 +19,13 @@ export class ProgressBar {
         this.currentNodes = 0;
         this.loadedConcepts = [];
         
-        this.createElements();
+        try {
+            this.createElements();
+            console.log('ProgressBar: Constructor completed successfully');
+            console.log('ProgressBar: Container created:', !!this.container);
+        } catch (error) {
+            console.error('ProgressBar: Error in constructor:', error);
+        }
     }
     
     createElements() {
@@ -273,10 +281,16 @@ export class ProgressBar {
         this.currentNodes = 0;
         this.loadedConcepts = [];
         
+        // Reset visibility state
+        this.isVisible = false;
+        
         this.progressFill.style.width = '0%';
         this.statusText.textContent = 'Generando conceptos...';
         this.progressCounter.textContent = '0 / 0 conceptos';
         this.conceptsList.innerHTML = '';
+        
+        // Reset container position for fresh start
+        this.container.style.transform = 'translateY(100%)';
         
         console.log('ProgressBar: Reset');
     }
@@ -309,4 +323,92 @@ export class ProgressBar {
         
         console.log('ProgressBar: Destroyed');
     }
+}
+
+// Add global function for testing and debugging
+if (typeof window !== 'undefined') {
+    window.testProgressBar = function() {
+        console.log('Testing ProgressBar...');
+        
+        // Find ProgressBar instance
+        const progressBar = window.conceptGraphApp?.graphRenderer?.progressBar;
+        
+        if (progressBar) {
+            console.log('ProgressBar found, testing...');
+            progressBar.show();
+            progressBar.setStatus('Test Progress');
+            progressBar.setProgress(3, 10);
+            progressBar.addConcept('TEST_CONCEPT_1');
+            progressBar.addConcept('TEST_CONCEPT_2');
+        } else {
+            console.error('ProgressBar not found in conceptGraphApp.graphRenderer');
+            console.log('Available objects:', {
+                conceptGraphApp: !!window.conceptGraphApp,
+                graphRenderer: !!window.conceptGraphApp?.graphRenderer
+            });
+        }
+    };
+    
+    // Debug function to inspect container styles
+    window.debugProgressBar = function() {
+        console.log('=== ProgressBar Debug ===');
+        console.log('conceptGraphApp exists:', !!window.conceptGraphApp);
+        console.log('graphRenderer exists:', !!window.conceptGraphApp?.graphRenderer);
+        
+        const progressBar = window.conceptGraphApp?.graphRenderer?.progressBar;
+        console.log('ProgressBar instance exists:', !!progressBar);
+        
+        if (progressBar) {
+            console.log('ProgressBar properties:');
+            console.log('- container:', !!progressBar.container);
+            console.log('- progressBar:', !!progressBar.progressBar);
+            console.log('- progressFill:', !!progressBar.progressFill);
+            console.log('- statusText:', !!progressBar.statusText);
+            console.log('- isVisible:', progressBar.isVisible);
+            
+            if (progressBar.container) {
+                const container = progressBar.container;
+                console.log('Container Debug:');
+                console.log('- Element exists:', !!container);
+                console.log('- In DOM:', document.body.contains(container));
+                console.log('- Display:', getComputedStyle(container).display);
+                console.log('- Transform:', getComputedStyle(container).transform);
+                console.log('- Z-index:', getComputedStyle(container).zIndex);
+                
+                // Force show for debugging
+                container.style.cssText = `
+                    position: fixed !important;
+                    bottom: 0 !important;
+                    left: 0 !important;
+                    width: 100% !important;
+                    background: rgba(255, 0, 0, 0.9) !important;
+                    padding: 2rem !important;
+                    z-index: 99999 !important;
+                    transform: translateY(0) !important;
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    border: 3px solid yellow !important;
+                    height: 200px !important;
+                `;
+                
+                container.innerHTML = '<div style="color: white; font-size: 24px;">DEBUG: ProgressBar Container Found!</div>';
+                console.log('Force styles applied - should be visible now with red background');
+            } else {
+                console.error('ProgressBar instance exists but container is null');
+                console.log('Attempting to recreate container...');
+                
+                // Try to recreate the container
+                try {
+                    progressBar.createElements();
+                    console.log('Container recreated. New container exists:', !!progressBar.container);
+                } catch (error) {
+                    console.error('Error recreating container:', error);
+                }
+            }
+        } else {
+            console.error('ProgressBar instance not found');
+            console.log('Available on conceptGraphApp.graphRenderer:', Object.keys(window.conceptGraphApp?.graphRenderer || {}));
+        }
+    };
 }

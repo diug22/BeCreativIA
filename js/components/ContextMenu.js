@@ -477,6 +477,15 @@ export class ContextMenu {
         // Calculate expected nodes for this expansion
         const expectedNodes = this.calculateExpectedNodes(iterations);
         
+        // Show progress bar for expansion
+        if (this.graphRenderer.progressBar) {
+            // Reset and show fresh progress bar
+            this.graphRenderer.progressBar.reset();
+            this.graphRenderer.progressBar.show();
+            this.graphRenderer.progressBar.setProgress(0, expectedNodes);
+            this.graphRenderer.progressBar.setStatus(`Expandiendo desde "${fromConcept}"...`);
+        }
+        
         // Get the source node data - if it doesn't exist, we'll create it
         let sourceNodeData = this.graphRenderer.nodes.get(fromConcept);
         
@@ -510,6 +519,7 @@ export class ContextMenu {
         // Generate related concepts
         let currentConcepts = [fromConcept];
         let allNewConcepts = new Set();
+        let createdNodesCount = 0;
         
         for (let cycle = 0; cycle < iterations; cycle++) {
             const nextConcepts = [];
@@ -544,12 +554,24 @@ export class ContextMenu {
                         
                         await this.graphRenderer.createNode(relatedConcept, newPos, true);
                         this.graphRenderer.createEdge(concept, relatedConcept, true);
+                        
+                        // Update progress bar
+                        createdNodesCount++;
+                        if (this.graphRenderer.progressBar) {
+                            this.graphRenderer.progressBar.setProgress(createdNodesCount, expectedNodes);
+                            this.graphRenderer.progressBar.addConcept(relatedConcept);
+                        }
                     }
                 }
             }
             
             if (nextConcepts.length === 0) break;
             currentConcepts = nextConcepts;
+        }
+        
+        // Complete progress and end growth phase
+        if (this.graphRenderer.progressBar) {
+            this.graphRenderer.progressBar.setComplete();
         }
         
         // End growth phase and reposition nodes

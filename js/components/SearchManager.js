@@ -623,6 +623,15 @@ export class SearchManager {
     }
     
     async generateSubgraph(rootConcept, expectedNodes) {
+        // Show progress bar for new subgraph creation
+        if (this.graphRenderer.progressBar) {
+            // Reset and show fresh progress bar
+            this.graphRenderer.progressBar.reset();
+            this.graphRenderer.progressBar.show();
+            this.graphRenderer.progressBar.setProgress(0, expectedNodes);
+            this.graphRenderer.progressBar.setStatus(`Creando grafo para "${rootConcept}"...`);
+        }
+        
         // Add root concept to backend
         await this.apiService.addConceptToGraph(rootConcept);
         
@@ -635,12 +644,19 @@ export class SearchManager {
         
         const rootNode = await this.graphRenderer.createNode(rootConcept, randomPos, true);
         
+        // Update progress with root node
+        if (this.graphRenderer.progressBar) {
+            this.graphRenderer.progressBar.setProgress(1, expectedNodes);
+            this.graphRenderer.progressBar.addConcept(rootConcept);
+        }
+        
         // Start new growth phase for this subgraph
         this.graphRenderer.startGrowthPhase(rootNode.sphere, expectedNodes);
         
         // Generate related concepts
         let currentConcepts = [rootConcept];
         let allConcepts = new Set([rootConcept]);
+        let createdNodesCount = 1; // Start with 1 for the root node
         
         for (let cycle = 0; cycle < this.getCurrentIterations(); cycle++) {
             const nextConcepts = [];
@@ -675,12 +691,24 @@ export class SearchManager {
                         
                         await this.graphRenderer.createNode(relatedConcept, newPos, true);
                         this.graphRenderer.createEdge(concept, relatedConcept, true);
+                        
+                        // Update progress bar
+                        createdNodesCount++;
+                        if (this.graphRenderer.progressBar) {
+                            this.graphRenderer.progressBar.setProgress(createdNodesCount, expectedNodes);
+                            this.graphRenderer.progressBar.addConcept(relatedConcept);
+                        }
                     }
                 }
             }
             
             if (nextConcepts.length === 0) break;
             currentConcepts = nextConcepts;
+        }
+        
+        // Complete progress bar
+        if (this.graphRenderer.progressBar) {
+            this.graphRenderer.progressBar.setComplete();
         }
         
         // End growth phase and reposition nodes
@@ -691,6 +719,15 @@ export class SearchManager {
     }
     
     async addSingleNode(concept) {
+        // Show progress bar for single node creation
+        if (this.graphRenderer.progressBar) {
+            // Reset and show fresh progress bar
+            this.graphRenderer.progressBar.reset();
+            this.graphRenderer.progressBar.show();
+            this.graphRenderer.progressBar.setProgress(0, 1);
+            this.graphRenderer.progressBar.setStatus(`Creando nodo "${concept}"...`);
+        }
+        
         await this.apiService.addConceptToGraph(concept);
         
         const randomPos = {
@@ -700,6 +737,13 @@ export class SearchManager {
         };
         
         await this.graphRenderer.createNode(concept, randomPos, true);
+        
+        // Update and complete progress
+        if (this.graphRenderer.progressBar) {
+            this.graphRenderer.progressBar.setProgress(1, 1);
+            this.graphRenderer.progressBar.addConcept(concept);
+            this.graphRenderer.progressBar.setComplete();
+        }
     }
     
     calculateExpectedNodes(iterations = null) {
